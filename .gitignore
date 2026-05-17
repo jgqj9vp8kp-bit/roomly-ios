@@ -1,0 +1,57 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Xcode user-specific files
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+xcuserdata/
+*.moved-aside
+
+# Xcode build artifacts
+DerivedData/
+build/
+Build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.xcarchive
+
+# Swift Package Manager
+.build/
+Package.resolved
+
+# Swift/Xcode intermediate files
+*.swiftpm/
+*.hmap
+*.ipa
+*.app.dSYM/
+
+# Playgrounds and previews
+timeline.xctimeline
+playground.xcworkspace
+
+# CocoaPods / Carthage / dependency managers
+Pods/
+Carthage/Build/
+
+# Fastlane generated files
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
