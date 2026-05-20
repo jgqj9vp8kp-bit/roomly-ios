@@ -6,29 +6,29 @@ struct OnboardingPage: Identifiable {
     let subtitle: String
     let symbol: String
     let accent: Color
+    let kind: OnboardingHeroKind
+}
+
+enum OnboardingHeroKind {
+    case location
+    case comfort
 }
 
 enum MockOnboardingData {
     static let pages = [
         OnboardingPage(
-            title: "Welcome to Roomly",
-            subtitle: "A refined way to read Local Weather and understand how your home may feel.",
-            symbol: "cloud.moon.fill",
-            accent: .cyan
+            title: "Location Forecast",
+            subtitle: "Get personalized weather and comfort insights based on your location.",
+            symbol: "location.fill",
+            accent: RoomlyTheme.ColorToken.primaryBlue,
+            kind: .location
         ),
         OnboardingPage(
-            title: "Indoor Estimate",
-            subtitle: "See a careful indoor comfort estimate shaped by weather, humidity, and pressure context.",
+            title: "Indoor Comfort Insights",
+            subtitle: "Get personalized indoor comfort estimates based on weather and room conditions.",
             symbol: "house.fill",
-            accent: .mint
-        ),
-        OnboardingPage(
-            title: "Comfort Index",
-            subtitle: "A calm score for quick decisions, from opening a window to settling in for the evening.",
-            symbol: "dial.high.fill",
-            accent: .orange
+            accent: RoomlyTheme.ColorToken.green,
+            kind: .comfort
         )
     ]
-
-    static let unitOptions = ["Celsius", "km/h", "hPa"]
 }

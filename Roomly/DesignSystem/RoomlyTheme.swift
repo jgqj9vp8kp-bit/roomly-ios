@@ -2,140 +2,122 @@ import SwiftUI
 
 enum RoomlyTheme {
     enum ColorToken {
-        static let ink = Color(red: 0.02, green: 0.03, blue: 0.07)
-        static let midnight = Color(red: 0.04, green: 0.07, blue: 0.14)
-        static let deepPlum = Color(red: 0.10, green: 0.06, blue: 0.13)
-        static let cyan = Color(red: 0.20, green: 0.82, blue: 0.92)
-        static let blue = Color(red: 0.30, green: 0.48, blue: 0.96)
-        static let mint = Color(red: 0.40, green: 0.94, blue: 0.76)
-        static let gold = Color(red: 0.92, green: 0.66, blue: 0.28)
+        static let background = Color(red: 0.972, green: 0.984, blue: 1.0)
+        static let surface = Color.white
+        static let surfaceBlue = Color(red: 0.945, green: 0.976, blue: 1.0)
+        static let tile = Color(red: 0.965, green: 0.98, blue: 0.996)
+        static let tileSelected = Color(red: 0.918, green: 0.957, blue: 1.0)
+        static let border = Color(red: 0.894, green: 0.933, blue: 0.976)
+        static let ink = Color(red: 0.067, green: 0.078, blue: 0.098)
+        static let inkBlue = Color(red: 0.09, green: 0.196, blue: 0.302)
+        static let secondaryInk = Color(red: 0.42, green: 0.47, blue: 0.55)
+        static let tertiaryInk = Color(red: 0.61, green: 0.65, blue: 0.71)
+        static let primaryBlue = Color(red: 0.09, green: 0.404, blue: 0.949)
+        static let sky = Color(red: 0.353, green: 0.702, blue: 1.0)
+        static let deepBlue = Color(red: 0.114, green: 0.306, blue: 0.847)
+        static let paleBlue = Color(red: 0.918, green: 0.957, blue: 1.0)
+        static let orange = Color(red: 1.0, green: 0.553, blue: 0.176)
+        static let sun = Color(red: 0.992, green: 0.729, blue: 0.231)
+        static let green = Color(red: 0.125, green: 0.788, blue: 0.592)
+        static let purple = Color(red: 0.431, green: 0.271, blue: 0.91)
+        static let red = Color(red: 1.0, green: 0.373, blue: 0.427)
     }
 
     enum Spacing {
-        static let page: CGFloat = 20
-        static let card: CGFloat = 20
-        static let section: CGFloat = 24
-        static let item: CGFloat = 14
+        static let screenHorizontal: CGFloat = 20
+        static let screenTop: CGFloat = 12
+        static let section: CGFloat = 14
+        static let card: CGFloat = 12
+        static let row: CGFloat = 10
     }
 
     enum Radius {
-        static let card: CGFloat = 28
-        static let hero: CGFloat = 34
-        static let control: CGFloat = 18
-        static let capsule: CGFloat = 999
+        static let screen: CGFloat = 34
+        static let hero: CGFloat = 28
+        static let card: CGFloat = 22
+        static let tile: CGFloat = 18
+        static let button: CGFloat = 29
+        static let small: CGFloat = 12
     }
 
     enum Shadow {
-        static let cardColor = Color.black.opacity(0.30)
-        static let glowColor = ColorToken.cyan.opacity(0.28)
+        static let soft = Color(red: 0.384, green: 0.517, blue: 0.682).opacity(0.18)
+        static let blue = ColorToken.primaryBlue.opacity(0.26)
+        static let warm = ColorToken.orange.opacity(0.20)
     }
 
-    static let background = LinearGradient(
-        colors: [
-            ColorToken.ink,
-            ColorToken.midnight,
-            ColorToken.deepPlum
-        ],
+    static let blueGradient = LinearGradient(
+        colors: [ColorToken.sky, Color(red: 0.184, green: 0.502, blue: 0.929), ColorToken.deepBlue],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
-    static let aurora = LinearGradient(
-        colors: [
-            ColorToken.cyan.opacity(0.38),
-            ColorToken.blue.opacity(0.22),
-            ColorToken.mint.opacity(0.20)
-        ],
+    static let orangeGradient = LinearGradient(
+        colors: [Color(red: 1.0, green: 0.706, blue: 0.322), ColorToken.orange, Color(red: 0.949, green: 0.392, blue: 0.094)],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
-    static let premium = LinearGradient(
-        colors: [
-            ColorToken.cyan,
-            ColorToken.blue,
-            ColorToken.gold
-        ],
+    static let purpleGradient = LinearGradient(
+        colors: [Color(red: 0.537, green: 0.349, blue: 1.0), ColorToken.purple, Color(red: 0.431, green: 0.271, blue: 0.91)],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
 
-    static let glassSurface = LinearGradient(
-        colors: [
-            Color.white.opacity(0.18),
-            Color.white.opacity(0.08),
-            Color.white.opacity(0.05)
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
+    static let ctaGradient = LinearGradient(
+        colors: [Color(red: 0.18, green: 0.545, blue: 1.0), ColorToken.primaryBlue],
+        startPoint: .leading,
+        endPoint: .trailing
+    )
+
+    static let insightGradient = LinearGradient(
+        colors: [ColorToken.paleBlue, Color.white],
+        startPoint: .leading,
+        endPoint: .trailing
     )
 }
 
 struct RoomlyBackground: View {
     var body: some View {
-        ZStack {
-            RoomlyTheme.background
-
-            LinearGradient(
-                colors: [
-                    RoomlyTheme.ColorToken.cyan.opacity(0.22),
-                    Color.clear,
-                    Color.indigo.opacity(0.18)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            LinearGradient(
-                colors: [
-                    Color.clear,
-                    RoomlyTheme.ColorToken.gold.opacity(0.10),
-                    Color.clear
-                ],
-                startPoint: .topTrailing,
-                endPoint: .bottomLeading
-            )
-        }
-        .ignoresSafeArea()
+        RoomlyTheme.ColorToken.background
+            .ignoresSafeArea()
     }
 }
 
-struct GlassCardModifier: ViewModifier {
-    var cornerRadius: CGFloat = 28
-    var borderOpacity: Double = 0.18
-    var glow: Bool = false
+struct CardSurfaceModifier: ViewModifier {
+    var cornerRadius: CGFloat = RoomlyTheme.Radius.card
+    var stroke: Color = RoomlyTheme.ColorToken.border
+    var shadow: Color = RoomlyTheme.Shadow.soft
 
     func body(content: Content) -> some View {
         content
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(.ultraThinMaterial.opacity(0.76))
-            )
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(RoomlyTheme.glassSurface)
-            )
+            .background(RoomlyTheme.ColorToken.surface, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(borderOpacity + 0.16),
-                                Color.white.opacity(0.04)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
+                    .stroke(stroke, lineWidth: 1)
             )
-            .shadow(color: glow ? RoomlyTheme.Shadow.glowColor : .clear, radius: glow ? 24 : 0, x: 0, y: 10)
-            .shadow(color: RoomlyTheme.Shadow.cardColor, radius: 28, x: 0, y: 18)
+            .shadow(color: shadow, radius: 18, x: 0, y: 8)
     }
 }
 
 extension View {
-    func glassCard(cornerRadius: CGFloat = 28, borderOpacity: Double = 0.18, glow: Bool = false) -> some View {
-        modifier(GlassCardModifier(cornerRadius: cornerRadius, borderOpacity: borderOpacity, glow: glow))
+    func roomlyCard(
+        cornerRadius: CGFloat = RoomlyTheme.Radius.card,
+        stroke: Color = RoomlyTheme.ColorToken.border,
+        shadow: Color = RoomlyTheme.Shadow.soft
+    ) -> some View {
+        modifier(CardSurfaceModifier(cornerRadius: cornerRadius, stroke: stroke, shadow: shadow))
+    }
+
+    func glassCard(
+        cornerRadius: CGFloat = RoomlyTheme.Radius.card,
+        borderOpacity: Double = 1,
+        glow: Bool = false
+    ) -> some View {
+        roomlyCard(
+            cornerRadius: cornerRadius,
+            stroke: RoomlyTheme.ColorToken.border.opacity(borderOpacity),
+            shadow: glow ? RoomlyTheme.Shadow.blue : RoomlyTheme.Shadow.soft
+        )
     }
 }

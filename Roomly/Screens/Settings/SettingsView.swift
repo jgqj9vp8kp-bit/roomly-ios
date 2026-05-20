@@ -1,73 +1,75 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @Binding var temperatureUnit: TemperatureUnit
-    @Binding var notificationsEnabled: Bool
+    @ObservedObject var viewModel: SettingsViewModel
+    @ObservedObject var locationViewModel: LocationViewModel
 
+    let settingsRows: [SettingsRowItem]
     let onResetOnboarding: () -> Void
     let onShowPaywall: () -> Void
+    @State private var showsManualLocation = false
 
     var body: some View {
         ZStack {
             RoomlyBackground()
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: RoomlyTheme.Spacing.section) {
-                    ScreenHeader(title: "Settings", subtitle: "Tune Roomly for the way your home feels")
-                        .cardEntrance(delay: 0.04)
+                VStack(spacing: 16) {
+                    ScreenHeader(title: "Settings", subtitle: "Tune Roomly for your home comfort routine")
+                        .padding(.top, 14)
+
                     premiumCard
-                        .cardEntrance(delay: 0.10)
                     preferencesCard
-                        .cardEntrance(delay: 0.16)
-                    appControlsCard
-                        .cardEntrance(delay: 0.22)
-                    footerCard
-                        .cardEntrance(delay: 0.28)
+                    locationCard
+                    appRows
+                    prototypeNote
                 }
-                .padding(.horizontal, RoomlyTheme.Spacing.page)
-                .padding(.top, 18)
-                .padding(.bottom, 38)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 28)
             }
         }
+        .navigationTitle("")
         .toolbar(.hidden, for: .navigationBar)
+        .fullScreenCover(isPresented: $showsManualLocation) {
+            ManualLocationView(locationViewModel: locationViewModel, onSelectionComplete: {})
+        }
     }
 
     private var premiumCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 14) {
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(.black.opacity(0.82))
-                    .frame(width: 50, height: 50)
-                    .background(RoomlyTheme.premium, in: Circle())
+                SymbolBadge(symbol: "crown.fill", tint: RoomlyTheme.ColorToken.sun, size: 52, isFilled: true)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Roomly Premium")
-                        .font(.headline.weight(.bold))
+                        .font(.system(size: 20, weight: .heavy, design: .rounded))
                         .foregroundStyle(.white)
 
-                    Text("Status: Preview placeholder")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.62))
+                    Text("Unlock Monthly Outlook and richer Weather Insights.")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.78))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
-            PremiumButton(title: "View Premium", action: onShowPaywall)
+            SecondaryPillButton(title: "View Premium", symbol: "arrow.right", action: onShowPaywall)
         }
         .padding(20)
-        .glassCard(cornerRadius: 28, glow: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoomlyTheme.blueGradient, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .shadow(color: RoomlyTheme.Shadow.blue, radius: 22, x: 0, y: 14)
     }
 
     private var preferencesCard: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            SectionTitle(title: "Preferences", symbol: "slider.horizontal.3")
+        VStack(alignment: .leading, spacing: 16) {
+            SectionTitle(title: "Preferences")
 
             VStack(alignment: .leading, spacing: 10) {
                 Text("Temperature Units")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 14, weight: .heavy))
+                    .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-                Picker("Temperature Units", selection: $temperatureUnit) {
+                Picker("Temperature Units", selection: $viewModel.temperatureUnit) {
                     ForEach(TemperatureUnit.allCases) { unit in
                         Text(unit.title).tag(unit)
                     }
@@ -75,72 +77,96 @@ struct SettingsView: View {
                 .pickerStyle(.segmented)
             }
             .padding(14)
-            .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: RoomlyTheme.Radius.control, style: .continuous))
+            .background(RoomlyTheme.ColorToken.tile, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
 
-            Toggle(isOn: $notificationsEnabled) {
+            Toggle(isOn: $viewModel.notificationsEnabled) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Notifications")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 14, weight: .heavy))
+                        .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
                     Text("Comfort shifts and pressure drops")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.52))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
                 }
             }
-            .tint(.cyan)
+            .tint(RoomlyTheme.ColorToken.primaryBlue)
             .padding(14)
-            .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: RoomlyTheme.Radius.control, style: .continuous))
+            .background(RoomlyTheme.ColorToken.tile, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .padding(18)
-        .glassCard(cornerRadius: 28)
+        .roomlyCard()
     }
 
-    private var appControlsCard: some View {
+    private var locationCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionTitle(title: "App", symbol: "gearshape.fill")
+            SectionTitle(title: "Location")
 
-            SettingsInfoRow(symbol: "checkmark.seal.fill", title: "Premium Status", subtitle: "Preview mode, no purchase system connected")
+            HStack(spacing: 12) {
+                SymbolBadge(symbol: locationSymbol, tint: locationTint, size: 42)
 
-            Button(role: .destructive, action: onResetOnboarding) {
-                HStack(spacing: 12) {
-                    Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 17, weight: .semibold))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(locationViewModel.activeLocationDisplayName)
+                        .font(.system(size: 15, weight: .heavy, design: .rounded))
+                        .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Reset Onboarding")
-                            .font(.subheadline.weight(.semibold))
-
-                        Text("Show the intro flow on next screen")
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.52))
-                    }
-
-                    Spacer()
+                    Text(locationSubtitle)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .foregroundStyle(.white)
-                .padding(14)
-                .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: RoomlyTheme.Radius.control, style: .continuous))
+
+                Spacer(minLength: 8)
+            }
+            .padding(14)
+            .background(RoomlyTheme.ColorToken.tile, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+            Button {
+                showsManualLocation = true
+            } label: {
+                Label("Change Location", systemImage: "mappin.and.ellipse")
+                    .font(.system(size: 14, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 46)
+                    .background(RoomlyTheme.ctaGradient, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
             .buttonStyle(.plain)
         }
         .padding(18)
-        .glassCard(cornerRadius: 28)
+        .roomlyCard()
     }
 
-    private var footerCard: some View {
+    private var appRows: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionTitle(title: "App")
+
+            ForEach(settingsRows) { item in
+                SettingsInfoRow(symbol: item.symbol, title: item.title, subtitle: item.subtitle)
+            }
+
+            Button(role: .destructive, action: onResetOnboarding) {
+                SettingsInfoRow(symbol: "arrow.counterclockwise", title: "Reset Onboarding", subtitle: "Show the intro flow again")
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(18)
+        .roomlyCard()
+    }
+
+    private var prototypeNote: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Prototype Mode")
-                .font(.headline.weight(.semibold))
-                .foregroundStyle(.white)
+                .font(.system(size: 17, weight: .heavy, design: .rounded))
+                .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-            Text("Roomly is currently using mock weather data only. No backend, accounts, or live sensor connections are included yet.")
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.62))
+            Text("Roomly uses mock weather data only. No backend, accounts, live sensor connections, API calls, RevenueCat, or sensor-grade indoor readings are connected.")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(20)
-        .glassCard(cornerRadius: 24)
+        .padding(18)
+        .roomlyCard()
     }
 }
 
@@ -150,37 +176,73 @@ private struct SettingsInfoRow: View {
     let subtitle: String
 
     var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: symbol)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.cyan)
-                .frame(width: 38, height: 38)
-                .background(Color.white.opacity(0.08), in: Circle())
+        HStack(spacing: 12) {
+            SymbolBadge(symbol: symbol, tint: RoomlyTheme.ColorToken.primaryBlue, size: 38)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 14, weight: .heavy))
+                    .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
                 Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.52))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
                     .lineLimit(2)
             }
 
-            Spacer()
+            Spacer(minLength: 8)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(RoomlyTheme.ColorToken.tertiaryInk)
         }
-        .padding(14)
-        .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .padding(.horizontal, 13)
+        .frame(height: 58)
+        .background(RoomlyTheme.ColorToken.tile, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+private extension SettingsView {
+    var locationSymbol: String {
+        switch locationViewModel.locationSource {
+        case .gps:
+            "location.fill"
+        case .manual:
+            "mappin.circle.fill"
+        case .none:
+            "location.slash.fill"
+        }
+    }
+
+    var locationTint: Color {
+        switch locationViewModel.locationSource {
+        case .gps:
+            RoomlyTheme.ColorToken.green
+        case .manual:
+            RoomlyTheme.ColorToken.primaryBlue
+        case .none:
+            RoomlyTheme.ColorToken.orange
+        }
+    }
+
+    var locationSubtitle: String {
+        switch locationViewModel.locationSource {
+        case .gps:
+            locationViewModel.activeCoordinates?.formatted ?? "Using current device location"
+        case .manual:
+            "Manual city · \(locationViewModel.activeCoordinates?.formatted ?? "coordinates saved")"
+        case .none:
+            "No active location selected"
+        }
     }
 }
 
 #Preview {
     SettingsView(
-        temperatureUnit: .constant(.celsius),
-        notificationsEnabled: .constant(true),
+        viewModel: SettingsViewModel(),
+        locationViewModel: LocationViewModel(),
+        settingsRows: MockWeatherData.settings,
         onResetOnboarding: {},
         onShowPaywall: {}
     )
-        .preferredColorScheme(.dark)
 }

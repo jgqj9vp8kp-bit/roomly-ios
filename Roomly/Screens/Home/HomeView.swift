@@ -1,199 +1,311 @@
 import SwiftUI
 
 struct HomeView: View {
-    let temperatureUnit: TemperatureUnit
+    @ObservedObject var weatherViewModel: WeatherViewModel
+    @ObservedObject var locationViewModel: LocationViewModel
     let onShowPaywall: () -> Void
-
-    private let snapshot = MockWeatherData.snapshot
-    private let columns = [
-        GridItem(.flexible(), spacing: RoomlyTheme.Spacing.item),
-        GridItem(.flexible(), spacing: RoomlyTheme.Spacing.item)
-    ]
+    @State private var showsManualLocation = false
 
     var body: some View {
         ZStack {
             RoomlyBackground()
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: RoomlyTheme.Spacing.section) {
-                    header
-                        .cardEntrance(delay: 0.03)
-                    heroCard
-                        .cardEntrance(delay: 0.10)
-                    metricGrid
-                        .cardEntrance(delay: 0.18)
+                VStack(spacing: 16) {
+                    content
                 }
-                .padding(.horizontal, RoomlyTheme.Spacing.page)
-                .padding(.top, 18)
-                .padding(.bottom, 38)
+                .padding(.horizontal, RoomlyTheme.Spacing.screenHorizontal)
+                .padding(.bottom, 28)
+            }
+            .refreshable {
+                await weatherViewModel.reload()
             }
         }
+        .navigationTitle("")
         .toolbar(.hidden, for: .navigationBar)
+        .task {
+            await weatherViewModel.loadIfNeeded()
+        }
+        .fullScreenCover(isPresented: $showsManualLocation) {
+            ManualLocationView(locationViewModel: locationViewModel, onSelectionComplete: {})
+        }
     }
 
-    private var header: some View {
-        HStack(alignment: .top) {
-            ScreenHeader(title: "Roomly", subtitle: "\(snapshot.location) • \(snapshot.updatedAt)")
+    @ViewBuilder
+    private var content: some View {
+        switch weatherViewModel.phase {
+        case .idle, .loading:
+            loadingContent
+        case .loaded:
+            if let dashboard = weatherViewModel.dashboard {
+                loadedContent(dashboard)
+            } else {
+                emptyContent("No Weather Insights are available yet.")
+            }
+        case .empty(let message):
+            emptyContent(message)
+        case .failed(let message):
+            errorContent(message)
+        }
+    }
 
-            Button(action: onShowPaywall) {
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.black.opacity(0.82))
-                    .frame(width: 44, height: 44)
-                    .background(RoomlyTheme.premium, in: Circle())
-                    .shadow(color: .cyan.opacity(0.22), radius: 14, x: 0, y: 8)
+    private var loadingContent: some View {
+        VStack(spacing: 16) {
+            SkeletonCard(height: 58, cornerRadius: 18)
+                .padding(.top, RoomlyTheme.Spacing.screenTop)
+            SkeletonCard(height: 212, cornerRadius: 24)
+            SkeletonCard(height: 212, cornerRadius: 24)
+            SkeletonCard(height: 212, cornerRadius: 24)
+            LoadingStateView(title: "Loading Weather Insights", subtitle: "Preparing your Indoor Comfort overview.")
+        }
+    }
+
+    private func loadedContent(_ dashboard: WeatherDashboard) -> some View {
+        VStack(spacing: 16) {
+            ScreenHeader(
+                title: "Roomly",
+                subtitle: "\(dashboard.snapshot.location) · \(dashboard.snapshot.updatedAt)",
+                trailingSymbol: "crown.fill",
+                trailingAction: onShowPaywall
+            )
+            .padding(.top, RoomlyTheme.Spacing.screenTop)
+            .cardEntrance(delay: 0.03)
+
+            LocationStateCard(viewModel: locationViewModel) {
+                showsManualLocation = true
+            }
+                .cardEntrance(delay: 0.05)
+
+            NavigationLink(value: RoomlyRoute.roomDetail) {
+                DashboardWeatherCard(
+                    title: "Indoor Comfort",
+                    subtitle: "Indoor Estimate",
+                    value: weatherViewModel.temperatureUnit.formatted(celsius: dashboard.indoorEstimateCelsius),
+                    footnote: "Comfort looks stable for the next few hours.",
+                    symbol: "thermometer.medium",
+                    gradient: RoomlyTheme.blueGradient
+                )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Open Roomly Premium")
+            .cardEntrance(delay: 0.08)
+
+            NavigationLink(value: RoomlyRoute.weatherInfo) {
+                DashboardWeatherCard(
+                    title: "Location Forecast",
+                    subtitle: dashboard.snapshot.condition,
+                    value: dashboard.snapshot.outdoorTemperature,
+                    footnote: "Light breeze · \(dashboard.snapshot.humidity) humidity",
+                    symbol: "cloud.sun.fill",
+                    gradient: RoomlyTheme.orangeGradient
+                )
+            }
+            .buttonStyle(.plain)
+            .cardEntrance(delay: 0.13)
+
+            NavigationLink(value: RoomlyRoute.monthlyOutlook) {
+                DashboardWeatherCard(
+                    title: "Weather Insights",
+                    subtitle: "Monthly Outlook",
+                    value: "30d",
+                    footnote: "A planning view for warmer days, humidity changes, and comfort trends.",
+                    symbol: "calendar",
+                    gradient: RoomlyTheme.purpleGradient
+                )
+            }
+            .buttonStyle(.plain)
+            .cardEntrance(delay: 0.18)
+
+            metricGrid(dashboard.dashboardMetrics)
+                .cardEntrance(delay: 0.23)
+
+            NavigationLink(value: RoomlyRoute.roomSetup) {
+                roomSetupRow
+            }
+            .buttonStyle(.plain)
+            .cardEntrance(delay: 0.28)
         }
     }
 
-    private var heroCard: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 18) {
-                ComfortGauge(value: snapshot.comfortIndex, size: 178, label: "Comfort Index")
+    private var roomSetupRow: some View {
+        HStack(spacing: 12) {
+            SymbolBadge(symbol: "slider.horizontal.3", tint: RoomlyTheme.ColorToken.primaryBlue, size: 40)
 
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Indoor Estimate")
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.white.opacity(0.64))
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Set Room Info")
+                    .font(.system(size: 16, weight: .heavy, design: .rounded))
+                    .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-                    Text(indoorEstimate)
-                        .font(.system(size: 78, weight: .thin, design: .rounded))
-                        .foregroundStyle(.white)
-                        .minimumScaleFactor(0.72)
-                        .contentTransition(.numericText())
-
-                    Label(snapshot.condition, systemImage: "sparkle.magnifyingglass")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.72))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(maxWidth: .infinity)
-
-            HStack(spacing: 14) {
-                CompactValue(symbol: "location.fill", title: "Local Weather", value: localWeatherTemperature)
-                CompactValue(symbol: "humidity.fill", title: "Humidity", value: snapshot.humidity)
+                Text("Update room conditions for Indoor Comfort insights.")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
             }
 
-            TemperatureProgress(value: MockWeatherData.indoorEstimateCelsius, unit: temperatureUnit)
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(RoomlyTheme.ColorToken.tertiaryInk)
         }
-        .padding(24)
-        .background {
-            ZStack {
-                RoundedRectangle(cornerRadius: RoomlyTheme.Radius.hero, style: .continuous)
-                    .fill(RoomlyTheme.aurora.opacity(0.72))
-
-                RoundedRectangle(cornerRadius: RoomlyTheme.Radius.hero, style: .continuous)
-                    .fill(.ultraThinMaterial.opacity(0.52))
-            }
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: RoomlyTheme.Radius.hero, style: .continuous)
-                .stroke(Color.white.opacity(0.20), lineWidth: 1)
-        )
-        .shadow(color: .cyan.opacity(0.16), radius: 30, x: 0, y: 20)
+        .padding(14)
+        .roomlyCard()
     }
 
-    private var metricGrid: some View {
-        VStack(spacing: 14) {
-            SectionTitle(title: "Room Conditions", symbol: "dial.high.fill")
-
-            LazyVGrid(columns: columns, spacing: RoomlyTheme.Spacing.item) {
-                ForEach(Array(MockWeatherData.metrics(for: temperatureUnit).enumerated()), id: \.element.id) { index, metric in
-                    GlassMetricCard(metric: metric)
-                        .cardEntrance(delay: 0.22 + Double(index) * 0.04)
-                }
-            }
-        }
-    }
-
-    private var indoorEstimate: String {
-        temperatureUnit.formatted(celsius: MockWeatherData.indoorEstimateCelsius)
-    }
-
-    private var localWeatherTemperature: String {
-        temperatureUnit.formatted(celsius: MockWeatherData.outdoorTemperatureCelsius)
-    }
-}
-
-private struct CompactValue: View {
-    let symbol: String
-    let title: String
-    let value: String
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: symbol)
-                .foregroundStyle(.cyan)
-                .frame(width: 30, height: 30)
-                .background(Color.white.opacity(0.10), in: Circle())
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.58))
-
-                Text(value)
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .contentTransition(.numericText())
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(15)
-        .frame(maxWidth: .infinity)
-        .background(Color.white.opacity(0.09), in: RoundedRectangle(cornerRadius: RoomlyTheme.Radius.control, style: .continuous))
-    }
-}
-
-private struct TemperatureProgress: View {
-    let value: Int
-    let unit: TemperatureUnit
-
-    @State private var progress: CGFloat = 0
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack {
-                Text("Indoor Estimate range")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.56))
-
-                Spacer()
-
-                Text(unit.formatted(celsius: value))
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.white.opacity(0.82))
-            }
-
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.white.opacity(0.12))
-
-                    Capsule()
-                        .fill(RoomlyTheme.premium)
-                        .frame(width: proxy.size.width * progress)
-                        .shadow(color: RoomlyTheme.ColorToken.cyan.opacity(0.30), radius: 8, x: 0, y: 0)
+    private func metricGrid(_ metrics: [WeatherMetric]) -> some View {
+        VStack(spacing: 10) {
+            ForEach(metrics.chunked(into: 2), id: \.first?.id) { row in
+                HStack(spacing: 10) {
+                    ForEach(row) { metric in
+                        GlassMetricCard(metric: metric)
+                    }
                 }
             }
-            .frame(height: 8)
         }
-        .padding(15)
-        .background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: RoomlyTheme.Radius.control, style: .continuous))
-        .onAppear {
-            progress = 0
-            withAnimation(.easeOut(duration: 0.9).delay(0.25)) {
-                progress = min(max(CGFloat(value - 12) / 18, 0.12), 0.92)
+    }
+
+    private func emptyContent(_ message: String) -> some View {
+        VStack(spacing: 16) {
+            ScreenHeader(title: "Roomly", subtitle: "Weather Insights")
+                .padding(.top, RoomlyTheme.Spacing.screenTop)
+            DataStateView(symbol: "cloud.slash.fill", title: "Nothing to show yet", message: message, actionTitle: "Reload") {
+                Task {
+                    await weatherViewModel.reload()
+                }
+            }
+        }
+    }
+
+    private func errorContent(_ message: String) -> some View {
+        VStack(spacing: 16) {
+            ScreenHeader(title: "Roomly", subtitle: "Weather Insights")
+                .padding(.top, RoomlyTheme.Spacing.screenTop)
+            DataStateView(symbol: "exclamationmark.triangle.fill", title: "Could not load Weather Insights", message: message, actionTitle: "Try Again") {
+                Task {
+                    await weatherViewModel.reload()
+                }
             }
         }
     }
 }
 
 #Preview {
-    HomeView(temperatureUnit: .celsius, onShowPaywall: {})
-        .preferredColorScheme(.dark)
+    NavigationStack {
+        HomeView(
+            weatherViewModel: WeatherViewModel(),
+            locationViewModel: LocationViewModel(),
+            onShowPaywall: {}
+        )
+    }
+}
+
+private struct LocationStateCard: View {
+    @ObservedObject var viewModel: LocationViewModel
+    let onManualLocation: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                SymbolBadge(symbol: symbol, tint: tint, size: 38)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.system(size: 15, weight: .heavy, design: .rounded))
+                        .foregroundStyle(RoomlyTheme.ColorToken.ink)
+
+                    Text(message)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+
+                if viewModel.isLoading {
+                    ProgressView()
+                        .tint(RoomlyTheme.ColorToken.primaryBlue)
+                }
+            }
+
+            if shouldShowActions {
+                HStack(spacing: 10) {
+                    Button {
+                        Task {
+                            _ = await viewModel.requestPermissionAndFetchLocation()
+                        }
+                    } label: {
+                        Label("Allow Location", systemImage: "location.fill")
+                            .font(.system(size: 12, weight: .heavy))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 38)
+                            .background(RoomlyTheme.ctaGradient, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        onManualLocation()
+                    } label: {
+                        Label("Enter Location Manually", systemImage: "keyboard")
+                            .font(.system(size: 12, weight: .heavy))
+                            .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 38)
+                            .background(RoomlyTheme.ColorToken.surfaceBlue, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(14)
+        .roomlyCard(cornerRadius: 20)
+    }
+
+    private var shouldShowActions: Bool {
+        viewModel.locationSource == .none
+    }
+
+    private var symbol: String {
+        if viewModel.locationSource == .manual {
+            return "mappin.circle.fill"
+        }
+
+        if viewModel.locationSource == .gps {
+            return "location.fill"
+        }
+        return "location.slash.fill"
+    }
+
+    private var tint: Color {
+        if viewModel.locationSource == .manual {
+            return RoomlyTheme.ColorToken.primaryBlue
+        }
+
+        if viewModel.locationSource == .gps {
+            return RoomlyTheme.ColorToken.green
+        }
+        return RoomlyTheme.ColorToken.orange
+    }
+
+    private var title: String {
+        if viewModel.locationSource != .none {
+            return viewModel.activeLocationDisplayName
+        }
+
+        return "Location not enabled"
+    }
+
+    private var message: String {
+        if viewModel.locationSource == .manual {
+            return "Manual city selected · mock Weather Insights remain active."
+        }
+
+        if viewModel.locationSource == .gps {
+            return viewModel.activeCoordinates?.formatted ?? "Location permission is enabled."
+        }
+
+        if let errorMessage = viewModel.errorMessage {
+            return errorMessage
+        }
+
+        return "Enable location for local context, or continue with mock data."
+    }
 }
