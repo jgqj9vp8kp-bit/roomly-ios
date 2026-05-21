@@ -49,7 +49,7 @@ struct ManualLocationView: View {
                     .font(.system(size: 26, weight: .heavy, design: .rounded))
                     .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-                Text("Select a city for local Weather Insights. Weather data stays mock-only for now.")
+                Text("Select a city for local Weather Insights powered by your saved coordinates.")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
@@ -101,6 +101,7 @@ struct ManualLocationView: View {
             VStack(spacing: 10) {
                 ForEach(filteredCities) { city in
                     Button {
+                        HapticFeedback.success()
                         locationViewModel.selectManualCity(city)
                         dismiss()
                         onSelectionComplete()
@@ -110,7 +111,7 @@ struct ManualLocationView: View {
                             isSelected: locationViewModel.selectedManualCity == city && locationViewModel.locationSource == .manual
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressableButtonStyle())
                 }
             }
             .padding(.vertical, 2)

@@ -77,7 +77,7 @@ struct PaywallView: View {
 
                 HStack(spacing: 6) {
                     PaywallHeroMetric(symbol: "house.fill", title: "Comfort", value: "82", tint: .white)
-                    PaywallHeroMetric(symbol: "sun.max.fill", title: "Outlook", value: "30d", tint: RoomlyTheme.ColorToken.sun)
+                    PaywallHeroMetric(symbol: "sun.max.fill", title: "Outlook", value: "7d", tint: RoomlyTheme.ColorToken.sun)
                 }
             }
             .frame(width: 230)
@@ -89,7 +89,7 @@ struct PaywallView: View {
     private var bodyContent: some View {
         VStack(spacing: 12) {
             VStack(spacing: 5) {
-                Text("Room Temperature")
+                Text("Estimated Room Comfort")
                     .font(.system(size: 24, weight: .bold, design: .rounded))
                     .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
@@ -131,6 +131,7 @@ struct PaywallView: View {
                 }
             }
             .padding(.top, 2)
+            .animation(.spring(response: 0.34, dampingFraction: 0.82), value: viewModel.selectedPlan)
 
             if case .failed(let message) = viewModel.phase {
                 Text(message)
@@ -143,6 +144,7 @@ struct PaywallView: View {
                 Task {
                     await viewModel.continueWithSelectedPlan()
                     if case .completed = viewModel.phase {
+                        HapticFeedback.success()
                         if let onContinue {
                             onContinue()
                         } else {
@@ -152,6 +154,8 @@ struct PaywallView: View {
                 }
             }
             .padding(.top, 2)
+
+            trustRow
 
             Text("Cancel anytime. Secure subscription. Your plan renews automatically and can be managed in App Store settings.")
                 .font(.system(size: 10, weight: .semibold))
@@ -177,6 +181,20 @@ struct PaywallView: View {
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 18)
+    }
+
+    private var trustRow: some View {
+        HStack(spacing: 8) {
+            Label("App Store billing", systemImage: "lock.shield.fill")
+            Circle().fill(RoomlyTheme.ColorToken.tertiaryInk.opacity(0.35)).frame(width: 4, height: 4)
+            Label("Mock preview", systemImage: "sparkles")
+        }
+        .font(.system(size: 11, weight: .heavy))
+        .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue)
+        .padding(.horizontal, 12)
+        .frame(height: 32)
+        .background(RoomlyTheme.ColorToken.surfaceBlue, in: Capsule())
+        .overlay(Capsule().stroke(RoomlyTheme.ColorToken.border, lineWidth: 1))
     }
 }
 

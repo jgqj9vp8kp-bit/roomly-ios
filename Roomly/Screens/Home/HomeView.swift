@@ -64,7 +64,7 @@ struct HomeView: View {
         VStack(spacing: 16) {
             ScreenHeader(
                 title: "Roomly",
-                subtitle: "\(dashboard.snapshot.location) · \(dashboard.snapshot.updatedAt)",
+                subtitle: dashboardSubtitle(for: dashboard),
                 trailingSymbol: "crown.fill",
                 trailingAction: onShowPaywall
             )
@@ -76,17 +76,17 @@ struct HomeView: View {
             }
                 .cardEntrance(delay: 0.05)
 
-            NavigationLink(value: RoomlyRoute.roomDetail) {
-                DashboardWeatherCard(
-                    title: "Indoor Comfort",
-                    subtitle: "Indoor Estimate",
-                    value: weatherViewModel.temperatureUnit.formatted(celsius: dashboard.indoorEstimateCelsius),
-                    footnote: "Comfort looks stable for the next few hours.",
-                    symbol: "thermometer.medium",
-                    gradient: RoomlyTheme.blueGradient
-                )
+            if let fallbackNotice = weatherViewModel.fallbackNotice {
+                WeatherFallbackNotice(message: fallbackNotice)
+                    .cardEntrance(delay: 0.06)
             }
-            .buttonStyle(.plain)
+
+            NavigationLink(value: RoomlyRoute.roomSetup) {
+                ComfortGaugeDashboardCard(dashboard: dashboard, unit: weatherViewModel.temperatureUnit)
+                    .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            }
+            .buttonStyle(PressableButtonStyle(scale: 0.985))
+            .simultaneousGesture(TapGesture().onEnded { HapticFeedback.light() })
             .cardEntrance(delay: 0.08)
 
             NavigationLink(value: RoomlyRoute.weatherInfo) {
@@ -94,25 +94,27 @@ struct HomeView: View {
                     title: "Location Forecast",
                     subtitle: dashboard.snapshot.condition,
                     value: dashboard.snapshot.outdoorTemperature,
-                    footnote: "Light breeze · \(dashboard.snapshot.humidity) humidity",
+                    footnote: dashboard.comfort.outdoorInsight,
                     symbol: "cloud.sun.fill",
                     gradient: RoomlyTheme.orangeGradient
                 )
             }
             .buttonStyle(.plain)
+            .simultaneousGesture(TapGesture().onEnded { HapticFeedback.light() })
             .cardEntrance(delay: 0.13)
 
             NavigationLink(value: RoomlyRoute.monthlyOutlook) {
                 DashboardWeatherCard(
                     title: "Weather Insights",
                     subtitle: "Monthly Outlook",
-                    value: "30d",
-                    footnote: "A planning view for warmer days, humidity changes, and comfort trends.",
+                    value: "7d",
+                    footnote: dashboard.comfort.weeklyTrendInsight,
                     symbol: "calendar",
                     gradient: RoomlyTheme.purpleGradient
                 )
             }
             .buttonStyle(.plain)
+            .simultaneousGesture(TapGesture().onEnded { HapticFeedback.light() })
             .cardEntrance(delay: 0.18)
 
             metricGrid(dashboard.dashboardMetrics)
@@ -122,8 +124,13 @@ struct HomeView: View {
                 roomSetupRow
             }
             .buttonStyle(.plain)
+            .simultaneousGesture(TapGesture().onEnded { HapticFeedback.light() })
             .cardEntrance(delay: 0.28)
+
+            dailyInsights(dashboard)
+                .cardEntrance(delay: 0.33)
         }
+        .animation(.spring(response: 0.55, dampingFraction: 0.86), value: dashboard.comfort.index)
     }
 
     private var roomSetupRow: some View {
@@ -150,6 +157,10 @@ struct HomeView: View {
         .roomlyCard()
     }
 
+    private func dashboardSubtitle(for dashboard: WeatherDashboard) -> String {
+        "\(locationViewModel.activeLocationDisplayName) · \(dashboard.snapshot.updatedAt)"
+    }
+
     private func metricGrid(_ metrics: [WeatherMetric]) -> some View {
         VStack(spacing: 10) {
             ForEach(metrics.chunked(into: 2), id: \.first?.id) { row in
@@ -162,11 +173,50 @@ struct HomeView: View {
         }
     }
 
+    private func dailyInsights(_ dashboard: WeatherDashboard) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SectionTitle(title: "Daily Insights", trailing: dashboard.comfort.level.rawValue)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    DailyInsightCard(
+                        symbol: "figure.walk",
+                        title: "Best Outside",
+                        message: "Best comfort in forecast: \(dashboard.comfort.bestComfortDay).",
+                        tint: RoomlyTheme.ColorToken.green
+                    )
+
+                    DailyInsightCard(
+                        symbol: "moon.fill",
+                        title: "Sleep Tonight",
+                        message: dashboard.comfort.sleepComfort.message,
+                        tint: RoomlyTheme.ColorToken.purple
+                    )
+
+                    DailyInsightCard(
+                        symbol: "cloud.rain.fill",
+                        title: "Rain Risk",
+                        message: dashboard.comfort.rainRisk.message,
+                        tint: RoomlyTheme.ColorToken.primaryBlue
+                    )
+
+                    DailyInsightCard(
+                        symbol: "humidity.fill",
+                        title: "Humidity",
+                        message: dashboard.comfort.humidityComfort.message,
+                        tint: RoomlyTheme.ColorToken.sky
+                    )
+                }
+                .padding(.vertical, 2)
+            }
+        }
+    }
+
     private func emptyContent(_ message: String) -> some View {
         VStack(spacing: 16) {
             ScreenHeader(title: "Roomly", subtitle: "Weather Insights")
                 .padding(.top, RoomlyTheme.Spacing.screenTop)
-            DataStateView(symbol: "cloud.slash.fill", title: "Nothing to show yet", message: message, actionTitle: "Reload") {
+            DataStateView(symbol: "cloud.slash.fill", title: "Weather is waiting", message: "Choose a location or refresh when you are back online. Roomly will keep the experience graceful.", actionTitle: "Reload") {
                 Task {
                     await weatherViewModel.reload()
                 }
@@ -178,7 +228,7 @@ struct HomeView: View {
         VStack(spacing: 16) {
             ScreenHeader(title: "Roomly", subtitle: "Weather Insights")
                 .padding(.top, RoomlyTheme.Spacing.screenTop)
-            DataStateView(symbol: "exclamationmark.triangle.fill", title: "Could not load Weather Insights", message: message, actionTitle: "Try Again") {
+            DataStateView(symbol: "exclamationmark.triangle.fill", title: "Weather needs a moment", message: "Live conditions did not arrive cleanly. Try again and Roomly will fall back softly if needed.", actionTitle: "Try Again") {
                 Task {
                     await weatherViewModel.reload()
                 }

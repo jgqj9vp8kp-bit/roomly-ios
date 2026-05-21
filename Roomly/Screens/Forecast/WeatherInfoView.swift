@@ -58,7 +58,7 @@ struct WeatherInfoView: View {
             SkeletonCard(height: 208, cornerRadius: 28)
             SkeletonCard(height: 78, cornerRadius: 18)
             SkeletonCard(height: 156, cornerRadius: 24)
-            LoadingStateView(title: "Loading Weather Info", subtitle: "Fetching mock hourly, weekly, and metric data.")
+            LoadingStateView(title: "Loading Weather Info", subtitle: "Fetching local hourly, weekly, and metric data.")
         }
     }
 
@@ -75,6 +75,10 @@ struct WeatherInfoView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
+            if let fallbackNotice = weatherViewModel.fallbackNotice {
+                WeatherFallbackNotice(message: fallbackNotice)
+            }
+
             mainWeatherCard(dashboard)
             maxMinRow(dashboard)
             hourlyForecast(dashboard.hourly)
@@ -82,13 +86,13 @@ struct WeatherInfoView: View {
             SectionTitle(title: "Weekly Forecast")
             weeklyForecast(dashboard.daily)
 
-            aqiInsightRow
+            comfortInsightRow(dashboard)
 
             SectionTitle(title: "Weather Metrics")
             metricsGrid(dashboard.weatherMetrics)
 
-            weatherAlerts
-            bestTimeCard
+            weatherAlerts(dashboard)
+            bestTimeCard(dashboard)
         }
     }
 
@@ -115,8 +119,9 @@ struct WeatherInfoView: View {
                 Text(dashboard.snapshot.outdoorTemperature)
                     .font(.system(size: 78, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
+                    .contentTransition(.numericText())
 
-                Text("Light breeze · \(dashboard.snapshot.humidity) humidity")
+                Text("\(dashboard.snapshot.wind) wind · \(dashboard.snapshot.humidity) humidity")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Color(red: 0.918, green: 0.957, blue: 1.0))
             }
@@ -131,6 +136,7 @@ struct WeatherInfoView: View {
         .frame(height: 208)
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
         .shadow(color: RoomlyTheme.Shadow.blue, radius: 24, x: 0, y: 14)
+        .animation(.spring(response: 0.55, dampingFraction: 0.84), value: dashboard.snapshot.outdoorTemperature)
     }
 
     private func maxMinRow(_ dashboard: WeatherDashboard) -> some View {
@@ -199,10 +205,10 @@ struct WeatherInfoView: View {
         .roomlyCard(cornerRadius: 22)
     }
 
-    private var aqiInsightRow: some View {
+    private func comfortInsightRow(_ dashboard: WeatherDashboard) -> some View {
         HStack(spacing: 12) {
-            SmallInfoCard(title: "Air Quality", value: "AQI 42", symbol: "leaf.fill", tint: RoomlyTheme.ColorToken.green)
-            SmallInfoCard(title: "Comfort Insight", value: "Outdoor conditions feel comfortable this evening.", symbol: "sparkles", tint: RoomlyTheme.ColorToken.primaryBlue)
+            SmallInfoCard(title: "Outdoor Comfort", value: dashboard.comfort.outdoorComfort.message, symbol: "figure.walk", tint: RoomlyTheme.ColorToken.green)
+            SmallInfoCard(title: "Comfort Insight", value: dashboard.comfort.outdoorInsight, symbol: "sparkles", tint: RoomlyTheme.ColorToken.primaryBlue)
         }
         .frame(height: 96)
     }
@@ -219,12 +225,12 @@ struct WeatherInfoView: View {
         }
     }
 
-    private var weatherAlerts: some View {
+    private func weatherAlerts(_ dashboard: WeatherDashboard) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: "checkmark.shield.fill")
+            Image(systemName: dashboard.comfort.rainRisk.level == .poor ? "cloud.rain.fill" : "checkmark.shield.fill")
                 .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(RoomlyTheme.ColorToken.green)
-            Text("No severe weather alerts")
+                .foregroundStyle(dashboard.comfort.rainRisk.level == .poor ? RoomlyTheme.ColorToken.primaryBlue : RoomlyTheme.ColorToken.green)
+            Text(dashboard.comfort.rainRisk.message)
                 .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(RoomlyTheme.ColorToken.ink)
             Spacer()
@@ -234,12 +240,12 @@ struct WeatherInfoView: View {
         .roomlyCard(cornerRadius: 18)
     }
 
-    private var bestTimeCard: some View {
+    private func bestTimeCard(_ dashboard: WeatherDashboard) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "clock.fill")
                 .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(.white)
-            Text("Best outdoor conditions today:\n18:00 - 21:00")
+            Text("Best comfort in forecast:\n\(dashboard.comfort.bestComfortDay)")
                 .font(.system(size: 14, weight: .heavy))
                 .lineSpacing(2)
                 .foregroundStyle(.white)

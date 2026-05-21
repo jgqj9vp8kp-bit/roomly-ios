@@ -9,7 +9,7 @@ struct MonthlyOutlookView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
-                    DetailNavigationBar(title: "Monthly Outlook", subtitle: "Planning view", trailingSymbol: "calendar") {}
+                    DetailNavigationBar(title: "Comfort Outlook", subtitle: "7-day planning view", trailingSymbol: "calendar") {}
                         .padding(.top, 12)
 
                     content
@@ -36,22 +36,22 @@ struct MonthlyOutlookView: View {
                 SkeletonCard(height: 204, cornerRadius: 24)
                 SkeletonCard(height: 232, cornerRadius: 24)
                 SkeletonCard(height: 222, cornerRadius: 20)
-                LoadingStateView(title: "Loading Monthly Outlook", subtitle: "Preparing your planning view.")
+                LoadingStateView(title: "Loading Comfort Outlook", subtitle: "Preparing your planning view.")
             }
         case .loaded:
             if let dashboard = weatherViewModel.dashboard {
                 loadedContent(dashboard)
             } else {
-                DataStateView(symbol: "calendar.badge.exclamationmark", title: "No Monthly Outlook", message: "No monthly data is available yet.", actionTitle: "Reload") {
+                DataStateView(symbol: "calendar.badge.exclamationmark", title: "No Comfort Outlook", message: "No comfort outlook is available yet.", actionTitle: "Reload") {
                     Task { await weatherViewModel.reload() }
                 }
             }
         case .empty(let message):
-            DataStateView(symbol: "calendar.badge.exclamationmark", title: "No Monthly Outlook", message: message, actionTitle: "Reload") {
+            DataStateView(symbol: "calendar.badge.exclamationmark", title: "No Comfort Outlook", message: message, actionTitle: "Reload") {
                 Task { await weatherViewModel.reload() }
             }
         case .failed(let message):
-            DataStateView(symbol: "exclamationmark.triangle.fill", title: "Monthly Outlook unavailable", message: message, actionTitle: "Try Again") {
+            DataStateView(symbol: "exclamationmark.triangle.fill", title: "Comfort Outlook unavailable", message: message, actionTitle: "Try Again") {
                 Task { await weatherViewModel.reload() }
             }
         }
@@ -59,41 +59,41 @@ struct MonthlyOutlookView: View {
 
     private func loadedContent(_ dashboard: WeatherDashboard) -> some View {
         VStack(spacing: 14) {
-            monthlySummary
-            trendCard
+            monthlySummary(dashboard)
+            trendCard(dashboard)
 
             SectionTitle(title: "Weekly Breakdown")
             weeklyBreakdown(dashboard.outlookWeeks)
 
             SectionTitle(title: "Best / Worst Days")
-            bestWorstDays
+            bestWorstDays(dashboard)
 
             SectionTitle(title: "Comfort Trend")
-            comfortTrend
+            comfortTrend(dashboard)
 
             SectionTitle(title: "Calendar Preview")
             calendarPreview
 
-            monthlyAlerts
+            monthlyAlerts(dashboard)
         }
     }
 
-    private var monthlySummary: some View {
+    private func monthlySummary(_ dashboard: WeatherDashboard) -> some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("May Outlook")
+                    Text("7-Day Comfort Outlook")
                         .font(.system(size: 22, weight: .heavy, design: .rounded))
                         .foregroundStyle(RoomlyTheme.ColorToken.inkBlue)
 
-                    Text("Slightly warmer · more humid")
+                    Text(dashboard.comfort.outlookSummary)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
                 }
 
                 Spacer()
 
-                Label("30 days", systemImage: "calendar")
+                Label("7 days", systemImage: "calendar")
                     .font(.system(size: 12, weight: .heavy))
                     .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue)
                     .padding(.horizontal, 10)
@@ -102,10 +102,10 @@ struct MonthlyOutlookView: View {
             }
 
             HStack(spacing: 8) {
-                SummaryTile(title: "Avg", value: "18°")
-                SummaryTile(title: "Rain", value: "42%")
-                SummaryTile(title: "Comfort", value: "82")
-                SummaryTile(title: "Wind", value: "Low")
+                SummaryTile(title: "Avg", value: weatherViewModel.temperatureUnit.degreeString(celsius: Double(dashboard.comfort.averageHighCelsius)))
+                SummaryTile(title: "Rain", value: "\(dashboard.comfort.peakRainChance)%")
+                SummaryTile(title: "Comfort", value: "\(dashboard.comfort.index)")
+                SummaryTile(title: "Wind", value: dashboard.comfort.windSummary)
             }
             .frame(height: 70)
 
@@ -114,7 +114,7 @@ struct MonthlyOutlookView: View {
                     .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(RoomlyTheme.ColorToken.sun)
 
-                Text("This month will be slightly warmer and more humid than usual.")
+                Text(dashboard.comfort.weeklyTrendInsight)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(RoomlyTheme.ColorToken.inkBlue)
                     .fixedSize(horizontal: false, vertical: true)
@@ -128,14 +128,14 @@ struct MonthlyOutlookView: View {
         .roomlyCard(cornerRadius: 24, stroke: Color(red: 0.882, green: 0.941, blue: 1))
     }
 
-    private var trendCard: some View {
+    private func trendCard(_ dashboard: WeatherDashboard) -> some View {
         VStack(spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Temperature Trend")
                         .font(.system(size: 17, weight: .heavy))
                         .foregroundStyle(RoomlyTheme.ColorToken.ink)
-                    Text("Indoor Estimate follows outdoor patterns")
+                    Text("Indoor Estimate follows available weather patterns")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
                 }
@@ -143,10 +143,10 @@ struct MonthlyOutlookView: View {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("+2.4°")
+                    Text(dashboard.comfort.level.rawValue)
                         .font(.system(size: 18, weight: .heavy, design: .rounded))
                         .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue)
-                    Text("vs usual")
+                    Text("comfort")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(RoomlyTheme.ColorToken.tertiaryInk)
                 }
@@ -156,11 +156,11 @@ struct MonthlyOutlookView: View {
                 .frame(height: 126)
 
             HStack {
-                ForEach(["1", "7", "14", "21", "28", "30"], id: \.self) { label in
+                ForEach(["1", "2", "3", "4", "5", "7"], id: \.self) { label in
                     Text(label)
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(Color(red: 0.561, green: 0.651, blue: 0.737))
-                    if label != "30" { Spacer() }
+                    if label != "7" { Spacer() }
                 }
             }
         }
@@ -181,24 +181,24 @@ struct MonthlyOutlookView: View {
         }
     }
 
-    private var bestWorstDays: some View {
+    private func bestWorstDays(_ dashboard: WeatherDashboard) -> some View {
         VStack(spacing: 10) {
             HStack(spacing: 10) {
-                InsightDayCard(title: "Best Comfort", date: "May 18", symbol: "checkmark.seal.fill", tint: RoomlyTheme.ColorToken.green)
-                InsightDayCard(title: "Warmest Day", date: "May 24", symbol: "sun.max.fill", tint: RoomlyTheme.ColorToken.sun)
+                InsightDayCard(title: "Best Comfort", date: dashboard.comfort.bestComfortDay, symbol: "checkmark.seal.fill", tint: RoomlyTheme.ColorToken.green)
+                InsightDayCard(title: "Warmest Day", date: dashboard.comfort.warmestDay, symbol: "sun.max.fill", tint: RoomlyTheme.ColorToken.sun)
             }
             HStack(spacing: 10) {
-                InsightDayCard(title: "Rainiest", date: "May 11", symbol: "cloud.rain.fill", tint: RoomlyTheme.ColorToken.primaryBlue)
-                InsightDayCard(title: "Coolest Night", date: "May 06", symbol: "moon.fill", tint: RoomlyTheme.ColorToken.purple)
+                InsightDayCard(title: "Rainiest", date: dashboard.comfort.rainiestDay, symbol: "cloud.rain.fill", tint: RoomlyTheme.ColorToken.primaryBlue)
+                InsightDayCard(title: "Coolest Night", date: dashboard.comfort.coolestNight, symbol: "moon.fill", tint: RoomlyTheme.ColorToken.purple)
             }
         }
     }
 
-    private var comfortTrend: some View {
+    private func comfortTrend(_ dashboard: WeatherDashboard) -> some View {
         VStack(spacing: 9) {
-            ComfortTrendRow(symbol: "arrow.up.forward", title: "Warmer afternoons", subtitle: "Comfort Index improves after noon")
-            ComfortTrendRow(symbol: "drop.fill", title: "Higher humidity", subtitle: "Indoor Comfort may feel heavier")
-            ComfortTrendRow(symbol: "wind", title: "Calmer evenings", subtitle: "Better window-opening windows")
+            ComfortTrendRow(symbol: "arrow.up.forward", title: "Comfort pattern", subtitle: dashboard.comfort.weeklyTrendInsight)
+            ComfortTrendRow(symbol: "drop.fill", title: dashboard.comfort.humidityComfort.title, subtitle: dashboard.comfort.humidityComfort.message)
+            ComfortTrendRow(symbol: "wind", title: dashboard.comfort.windRisk.title, subtitle: dashboard.comfort.windRisk.message)
         }
     }
 
@@ -218,13 +218,13 @@ struct MonthlyOutlookView: View {
         .roomlyCard(cornerRadius: 22)
     }
 
-    private var monthlyAlerts: some View {
+    private func monthlyAlerts(_ dashboard: WeatherDashboard) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "checkmark.shield.fill")
                 .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(RoomlyTheme.ColorToken.green)
 
-            Text("No major weather alerts expected this month.")
+            Text("Outlook is based on available 7-day forecast data, not a precise 30-day forecast. \(dashboard.comfort.rainRisk.message)")
                 .font(.system(size: 13, weight: .heavy))
                 .foregroundStyle(RoomlyTheme.ColorToken.ink)
                 .fixedSize(horizontal: false, vertical: true)

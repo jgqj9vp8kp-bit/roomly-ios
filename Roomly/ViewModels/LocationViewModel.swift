@@ -131,6 +131,20 @@ final class LocationViewModel: ObservableObject {
         }
     }
 
+    var activeWeatherLocation: WeatherLocation? {
+        guard let activeCoordinates else { return nil }
+        return WeatherLocation(
+            name: activeLocationDisplayName,
+            latitude: activeCoordinates.latitude,
+            longitude: activeCoordinates.longitude,
+            source: locationSource
+        )
+    }
+
+    var activeLocationKey: String {
+        activeWeatherLocation?.cacheKey ?? "none"
+    }
+
     var hasUsableLocation: Bool {
         locationSource != .none && activeCoordinates != nil
     }

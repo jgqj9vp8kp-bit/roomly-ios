@@ -37,7 +37,7 @@ enum RoomlyTab: Hashable {
 
 struct RoomlyRootView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @AppStorage("temperatureUnit") private var temperatureUnitRawValue = TemperatureUnit.celsius.rawValue
+    @AppStorage("temperatureUnit") private var temperatureUnitRawValue = TemperatureUnit.fahrenheit.rawValue
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
 
     @StateObject private var weatherViewModel = WeatherViewModel()
@@ -46,6 +46,9 @@ struct RoomlyRootView: View {
     @StateObject private var locationViewModel = LocationViewModel()
 
     @State private var selectedTab: RoomlyTab = .home
+    @State private var homePath: [RoomlyRoute] = []
+    @State private var weatherPath: [RoomlyRoute] = []
+    @State private var settingsPath: [RoomlyRoute] = []
     @State private var showsPaywall = false
     @State private var isEnteringFromOnboarding = false
 
@@ -66,7 +69,12 @@ struct RoomlyRootView: View {
         .task {
             syncSettingsFromStorage()
             await locationViewModel.fetchLocationIfAuthorized()
-            await weatherViewModel.loadIfNeeded()
+            await weatherViewModel.loadIfNeeded(for: locationViewModel.activeWeatherLocation)
+        }
+        .onChange(of: locationViewModel.activeLocationKey) { _, _ in
+            Task {
+                await weatherViewModel.reload(for: locationViewModel.activeWeatherLocation)
+            }
         }
         .onChange(of: settingsViewModel.hasCompletedOnboarding) { _, newValue in
             hasCompletedOnboarding = newValue
@@ -74,7 +82,7 @@ struct RoomlyRootView: View {
         .onChange(of: settingsViewModel.temperatureUnit) { _, newValue in
             temperatureUnitRawValue = newValue.rawValue
             Task {
-                await weatherViewModel.reload(unit: newValue)
+                await weatherViewModel.reload(for: locationViewModel.activeWeatherLocation, unit: newValue)
             }
         }
         .onChange(of: settingsViewModel.notificationsEnabled) { _, newValue in
@@ -92,14 +100,14 @@ struct RoomlyRootView: View {
 
     private var appTabs: some View {
         TabView(selection: $selectedTab) {
-            NavigationStack {
+            NavigationStack(path: $homePath) {
                 HomeView(
                     weatherViewModel: weatherViewModel,
                     locationViewModel: locationViewModel,
                     onShowPaywall: showPaywall
                 )
                     .navigationDestination(for: RoomlyRoute.self) { route in
-                        destination(for: route)
+                        destination(for: route, path: $homePath)
                     }
             }
             .tabItem {
@@ -107,10 +115,10 @@ struct RoomlyRootView: View {
             }
             .tag(RoomlyTab.home)
 
-            NavigationStack {
+            NavigationStack(path: $weatherPath) {
                 ForecastView(weatherViewModel: weatherViewModel)
                     .navigationDestination(for: RoomlyRoute.self) { route in
-                        destination(for: route)
+                        destination(for: route, path: $weatherPath)
                     }
             }
             .tabItem {
@@ -118,16 +126,17 @@ struct RoomlyRootView: View {
             }
             .tag(RoomlyTab.weather)
 
-            NavigationStack {
+            NavigationStack(path: $settingsPath) {
                 SettingsView(
                     viewModel: settingsViewModel,
                     locationViewModel: locationViewModel,
                     settingsRows: weatherViewModel.dashboard?.settingsRows ?? MockWeatherData.settings,
                     onResetOnboarding: resetOnboarding,
+                    onResetRoomSettings: resetRoomSettings,
                     onShowPaywall: showPaywall
                 )
                 .navigationDestination(for: RoomlyRoute.self) { route in
-                    destination(for: route)
+                    destination(for: route, path: $settingsPath)
                 }
             }
             .tabItem {
@@ -142,10 +151,15 @@ struct RoomlyRootView: View {
     }
 
     @ViewBuilder
-    private func destination(for route: RoomlyRoute) -> some View {
+    private func destination(for route: RoomlyRoute, path: Binding<[RoomlyRoute]>) -> some View {
         switch route {
         case .roomSetup:
-            RoomSetupView(weatherViewModel: weatherViewModel)
+            RoomSetupView(weatherViewModel: weatherViewModel) {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    path.wrappedValue.removeAll { $0 == .roomSetup }
+                    path.wrappedValue.append(.roomDetail)
+                }
+            }
         case .roomDetail:
             RoomDetailView(weatherViewModel: weatherViewModel)
         case .weatherInfo:
@@ -157,7 +171,7 @@ struct RoomlyRootView: View {
 
     private func syncSettingsFromStorage() {
         settingsViewModel.hasCompletedOnboarding = hasCompletedOnboarding
-        settingsViewModel.temperatureUnit = TemperatureUnit(rawValue: temperatureUnitRawValue) ?? .celsius
+        settingsViewModel.temperatureUnit = TemperatureUnit(rawValue: temperatureUnitRawValue) ?? .fahrenheit
         settingsViewModel.notificationsEnabled = notificationsEnabled
     }
 
@@ -179,9 +193,20 @@ struct RoomlyRootView: View {
 
     private func resetOnboarding() {
         selectedTab = .home
+        homePath = []
+        weatherPath = []
+        settingsPath = []
         subscriptionViewModel.clearError()
         withAnimation(.easeInOut(duration: 0.28)) {
             settingsViewModel.resetOnboarding()
+        }
+    }
+
+    private func resetRoomSettings() {
+        HapticFeedback.success()
+        weatherViewModel.resetRoomSettings()
+        Task {
+            await weatherViewModel.reload(for: locationViewModel.activeWeatherLocation)
         }
     }
 }

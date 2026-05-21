@@ -5,6 +5,7 @@ struct OnboardingView: View {
     let onComplete: () -> Void
 
     @State private var selectedPage = 0
+    @State private var showsLocationStep = false
     @State private var showsManualLocation = false
     private let pages = MockOnboardingData.pages
 
@@ -12,54 +13,51 @@ struct OnboardingView: View {
         ZStack {
             Color.white.ignoresSafeArea()
 
-            TabView(selection: $selectedPage) {
-                ForEach(Array(pages.enumerated()), id: \.element.id) { index, page in
-                    OnboardingPageView(
-                        page: page,
-                        selectedPage: selectedPage,
-                        pageCount: pages.count,
-                        locationViewModel: locationViewModel
-                    ) {
-                        handlePrimaryAction(for: page, index: index)
-                    } onManualLocation: {
+            if showsLocationStep {
+                OnboardingLocationStep(
+                    locationViewModel: locationViewModel,
+                    onManualLocation: {
                         showsManualLocation = true
+                    },
+                    onComplete: onComplete
+                )
+                .transition(.opacity.combined(with: .move(edge: .trailing)))
+            } else {
+                TabView(selection: $selectedPage) {
+                    ForEach(Array(pages.enumerated()), id: \.element.id) { index, page in
+                        OnboardingPageView(
+                            page: page,
+                            selectedPage: selectedPage,
+                            pageCount: pages.count
+                        ) {
+                            advance(from: index)
+                        }
+                        .tag(index)
+                        .transition(.opacity.combined(with: .scale(scale: 0.985)))
                     }
-                    .tag(index)
                 }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .ignoresSafeArea(edges: .top)
+                .animation(.spring(response: 0.45, dampingFraction: 0.86), value: selectedPage)
+                .transition(.opacity.combined(with: .move(edge: .leading)))
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .ignoresSafeArea(edges: .top)
         }
+        .animation(.spring(response: 0.45, dampingFraction: 0.86), value: showsLocationStep)
         .fullScreenCover(isPresented: $showsManualLocation) {
             ManualLocationView(locationViewModel: locationViewModel) {
-                advance(from: selectedPage)
+                onComplete()
             }
-        }
-    }
-
-    private func handlePrimaryAction(for page: OnboardingPage, index: Int) {
-        if page.kind == .location {
-            if locationViewModel.hasUsableLocation {
-                advance(from: index)
-                return
-            }
-
-            Task {
-                let isAllowed = await locationViewModel.requestPermissionAndFetchLocation()
-                if isAllowed {
-                    advance(from: index)
-                }
-            }
-        } else {
-            advance(from: index)
         }
     }
 
     private func advance(from index: Int) {
+        HapticFeedback.selection()
         if index == pages.count - 1 {
-            onComplete()
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                showsLocationStep = true
+            }
         } else {
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.84)) {
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
                 selectedPage = index + 1
             }
         }
@@ -70,9 +68,7 @@ private struct OnboardingPageView: View {
     let page: OnboardingPage
     let selectedPage: Int
     let pageCount: Int
-    @ObservedObject var locationViewModel: LocationViewModel
     let onContinue: () -> Void
-    let onManualLocation: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -97,18 +93,9 @@ private struct OnboardingPageView: View {
                 Spacer(minLength: 12)
 
                 VStack(spacing: 14) {
-                    if page.kind == .location {
-                        LocationPermissionStatusPanel(
-                            viewModel: locationViewModel,
-                            onManualLocation: onManualLocation
-                        )
-                    }
-
                     pageDots
 
-                    PremiumButton(title: primaryButtonTitle, symbol: nil, action: onContinue)
-                        .disabled(locationViewModel.isLoading && page.kind == .location)
-                        .opacity(locationViewModel.isLoading && page.kind == .location ? 0.72 : 1)
+                    PremiumButton(title: "Continue", symbol: nil, action: onContinue)
                 }
             }
             .padding(.horizontal, 28)
@@ -117,22 +104,6 @@ private struct OnboardingPageView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.white)
         }
-    }
-
-    private var primaryButtonTitle: String {
-        guard page.kind == .location else {
-            return "Continue"
-        }
-
-        if locationViewModel.isLoading {
-            return "Requesting..."
-        }
-
-        if locationViewModel.hasUsableLocation {
-            return "Continue"
-        }
-
-        return "Allow Location"
     }
 
     @ViewBuilder
@@ -151,6 +122,97 @@ private struct OnboardingPageView: View {
                 Capsule()
                     .fill(index == selectedPage ? RoomlyTheme.ColorToken.primaryBlue : Color(red: 0.82, green: 0.88, blue: 0.95))
                     .frame(width: index == selectedPage ? 22 : 8, height: 8)
+            }
+        }
+    }
+}
+
+private struct OnboardingLocationStep: View {
+    @ObservedObject var locationViewModel: LocationViewModel
+    let onManualLocation: () -> Void
+    let onComplete: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            LocationMapHero()
+                .frame(height: 560)
+
+            VStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Choose Your Location")
+                        .font(.system(size: 30, weight: .heavy, design: .rounded))
+                        .foregroundStyle(RoomlyTheme.ColorToken.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("Allow GPS or enter a city manually to personalize your forecast and comfort insights.")
+                        .font(.system(size: 17, weight: .medium))
+                        .lineSpacing(2)
+                        .foregroundStyle(Color(red: 0.122, green: 0.161, blue: 0.216))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Spacer(minLength: 12)
+
+                VStack(spacing: 14) {
+                    LocationPermissionStatusPanel(
+                        viewModel: locationViewModel,
+                        onManualLocation: {
+                            HapticFeedback.selection()
+                            onManualLocation()
+                        }
+                    )
+
+                    PremiumButton(title: primaryButtonTitle, symbol: nil) {
+                        handlePrimaryAction()
+                    }
+                    .disabled(locationViewModel.isLoading)
+                    .opacity(locationViewModel.isLoading ? 0.72 : 1)
+
+                    Button {
+                        HapticFeedback.selection()
+                        onComplete()
+                    } label: {
+                        Text("Continue for Now")
+                            .font(.system(size: 13, weight: .heavy))
+                            .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+                            .frame(height: 28)
+                    }
+                    .buttonStyle(PressableButtonStyle())
+                }
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 12)
+            .padding(.bottom, 20)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.white)
+        }
+    }
+
+    private var primaryButtonTitle: String {
+        if locationViewModel.isLoading {
+            return "Requesting..."
+        }
+
+        if locationViewModel.hasUsableLocation {
+            return "Continue"
+        }
+
+        return "Allow Location"
+    }
+
+    private func handlePrimaryAction() {
+        if locationViewModel.hasUsableLocation {
+            HapticFeedback.success()
+            onComplete()
+            return
+        }
+
+        Task {
+            let isAllowed = await locationViewModel.requestPermissionAndFetchLocation()
+            if isAllowed {
+                HapticFeedback.success()
+                onComplete()
             }
         }
     }
@@ -185,7 +247,10 @@ private struct LocationPermissionStatusPanel: View {
             }
 
             if shouldShowManualButton {
-                Button(action: onManualLocation) {
+                Button {
+                    HapticFeedback.selection()
+                    onManualLocation()
+                } label: {
                     Label("Enter Location Manually", systemImage: "keyboard")
                         .font(.system(size: 13, weight: .heavy))
                         .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue)
@@ -193,7 +258,7 @@ private struct LocationPermissionStatusPanel: View {
                         .frame(height: 40)
                         .background(RoomlyTheme.ColorToken.surfaceBlue, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableButtonStyle())
             }
         }
         .padding(12)
@@ -261,7 +326,7 @@ private struct LocationPermissionStatusPanel: View {
 
     private var statusMessage: String {
         if viewModel.locationSource == .manual {
-            return "Manual city selected. Roomly will continue with mock Weather Insights."
+            return "Manual city selected. Roomly will personalize Weather Insights from saved coordinates."
         }
 
         if let errorMessage = viewModel.errorMessage, !errorMessage.isEmpty {
@@ -384,7 +449,7 @@ private struct IndoorComfortHero: View {
                     MiniComfortMetric(title: "Wind", value: "11")
                 }
 
-                Text("Comfort looks stable for the next few hours.")
+                Text("Estimated comfort looks stable for the next few hours.")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
             }

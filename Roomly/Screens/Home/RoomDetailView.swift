@@ -9,7 +9,7 @@ struct RoomDetailView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    DetailNavigationBar(title: "Room Temperature", trailingSymbol: "info.circle") {}
+                    DetailNavigationBar(title: "Estimated Room Comfort", trailingSymbol: "info.circle") {}
                         .padding(.top, 12)
 
                     content
@@ -58,9 +58,9 @@ struct RoomDetailView: View {
         VStack(spacing: 12) {
             indoorCard(dashboard)
             outdoorCard(dashboard)
-            comfortStatusCard
+            comfortStatusCard(dashboard)
             metricRows(dashboard.weatherMetrics)
-            comfortTip
+            comfortTip(dashboard)
         }
     }
 
@@ -76,11 +76,11 @@ struct RoomDetailView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(weatherViewModel.temperatureUnit.formatted(celsius: dashboard.indoorEstimateCelsius))
+                Text(dashboard.snapshot.indoorEstimate)
                     .font(.system(size: 58, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
 
-                Text("Inside")
+                Text("Indoor Estimate")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color(red: 0.918, green: 0.957, blue: 1.0))
             }
@@ -121,15 +121,15 @@ struct RoomDetailView: View {
         .shadow(color: RoomlyTheme.Shadow.blue.opacity(0.45), radius: 16, x: 0, y: 8)
     }
 
-    private var comfortStatusCard: some View {
+    private func comfortStatusCard(_ dashboard: WeatherDashboard) -> some View {
         HStack(spacing: 12) {
-            SymbolBadge(symbol: "checkmark.seal.fill", tint: RoomlyTheme.ColorToken.green, size: 44)
+            SymbolBadge(symbol: comfortSymbol(for: dashboard.comfort.level), tint: comfortTint(for: dashboard.comfort.level), size: 44)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Comfort Status")
+                Text("Comfort Index \(dashboard.comfort.index) · \(dashboard.comfort.level.rawValue)")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
-                Text("Opening windows may improve room comfort.")
+                Text(dashboard.comfort.roomInsight)
                     .font(.system(size: 15, weight: .heavy))
                     .foregroundStyle(RoomlyTheme.ColorToken.ink)
             }
@@ -153,10 +153,10 @@ struct RoomDetailView: View {
         .padding(.top, 8)
     }
 
-    private var comfortTip: some View {
+    private func comfortTip(_ dashboard: WeatherDashboard) -> some View {
         HStack(spacing: 10) {
             SymbolBadge(symbol: "lightbulb.fill", tint: .white, size: 34, isFilled: true)
-            Text("Opening windows may improve room comfort.")
+            Text(dashboard.comfort.sleepComfort.message)
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(Color(red: 0.204, green: 0.314, blue: 0.42))
             Spacer()
@@ -171,6 +171,28 @@ struct RoomDetailView: View {
     private func emptyContent(_ message: String) -> some View {
         DataStateView(symbol: "house.slash.fill", title: "No room details yet", message: message, actionTitle: "Reload") {
             Task { await weatherViewModel.reload() }
+        }
+    }
+
+    private func comfortSymbol(for level: ComfortLevel) -> String {
+        switch level {
+        case .excellent, .good:
+            "checkmark.seal.fill"
+        case .moderate:
+            "exclamationmark.circle.fill"
+        case .poor:
+            "exclamationmark.triangle.fill"
+        }
+    }
+
+    private func comfortTint(for level: ComfortLevel) -> Color {
+        switch level {
+        case .excellent, .good:
+            RoomlyTheme.ColorToken.green
+        case .moderate:
+            RoomlyTheme.ColorToken.orange
+        case .poor:
+            RoomlyTheme.ColorToken.purple
         }
     }
 }

@@ -6,6 +6,7 @@ struct SettingsView: View {
 
     let settingsRows: [SettingsRowItem]
     let onResetOnboarding: () -> Void
+    let onResetRoomSettings: () -> Void
     let onShowPaywall: () -> Void
     @State private var showsManualLocation = false
 
@@ -149,6 +150,11 @@ struct SettingsView: View {
                 SettingsInfoRow(symbol: "arrow.counterclockwise", title: "Reset Onboarding", subtitle: "Show the intro flow again")
             }
             .buttonStyle(.plain)
+
+            Button(role: .destructive, action: onResetRoomSettings) {
+                SettingsInfoRow(symbol: "house.slash.fill", title: "Reset Room Settings", subtitle: "Use the default Indoor Estimate")
+            }
+            .buttonStyle(.plain)
         }
         .padding(18)
         .roomlyCard()
@@ -160,7 +166,7 @@ struct SettingsView: View {
                 .font(.system(size: 17, weight: .heavy, design: .rounded))
                 .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-            Text("Roomly uses mock weather data only. No backend, accounts, live sensor connections, API calls, RevenueCat, or sensor-grade indoor readings are connected.")
+            Text("Roomly fetches forecast data directly from Open-Meteo when a location is active, with mock fallback data for testing and outages. No backend, accounts, live sensor connections, RevenueCat, or sensor-grade indoor readings are connected.")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
@@ -243,6 +249,7 @@ private extension SettingsView {
         locationViewModel: LocationViewModel(),
         settingsRows: MockWeatherData.settings,
         onResetOnboarding: {},
+        onResetRoomSettings: {},
         onShowPaywall: {}
     )
 }

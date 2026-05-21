@@ -8,7 +8,7 @@ final class SettingsViewModel: ObservableObject {
 
     init(
         hasCompletedOnboarding: Bool = false,
-        temperatureUnit: TemperatureUnit = .celsius,
+        temperatureUnit: TemperatureUnit = .fahrenheit,
         notificationsEnabled: Bool = true
     ) {
         self.hasCompletedOnboarding = hasCompletedOnboarding
