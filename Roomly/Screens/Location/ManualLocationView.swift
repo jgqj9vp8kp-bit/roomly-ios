@@ -3,19 +3,47 @@ import SwiftUI
 struct ManualLocationView: View {
     @ObservedObject var locationViewModel: LocationViewModel
     let onSelectionComplete: () -> Void
+    private let geocodingService: any GeocodingService
 
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
+    @State private var searchResults: [LocationSearchResult] = []
+    @State private var isSearching = false
+    @State private var searchError: String?
+    @State private var searchTask: Task<Void, Never>?
 
-    private var filteredCities: [ManualLocationCity] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else {
+    init(
+        locationViewModel: LocationViewModel,
+        geocodingService: any GeocodingService = OpenMeteoGeocodingService(),
+        onSelectionComplete: @escaping () -> Void
+    ) {
+        self.locationViewModel = locationViewModel
+        self.geocodingService = geocodingService
+        self.onSelectionComplete = onSelectionComplete
+    }
+
+    private var trimmedQuery: String {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var visibleLocations: [ManualLocationCity] {
+        guard !trimmedQuery.isEmpty else {
             return ManualLocationData.cities
         }
 
-        return ManualLocationData.cities.filter {
-            $0.name.localizedCaseInsensitiveContains(query)
-        }
+        return searchResults.map(ManualLocationCity.init(searchResult:))
+    }
+
+    private var shouldShowEmptyState: Bool {
+        !trimmedQuery.isEmpty && !isSearching && searchError == nil && visibleLocations.isEmpty
+    }
+
+    private var shouldShowMinimumQueryState: Bool {
+        !trimmedQuery.isEmpty && trimmedQuery.count < 2 && !isSearching
+    }
+
+    private var titleText: String {
+        trimmedQuery.isEmpty ? "Popular Locations" : "Search Results"
     }
 
     var body: some View {
@@ -28,7 +56,13 @@ struct ManualLocationView: View {
 
                 searchField
 
-                if filteredCities.isEmpty {
+                if isSearching {
+                    loadingState
+                } else if let searchError {
+                    errorState(searchError)
+                } else if shouldShowMinimumQueryState {
+                    minimumQueryState
+                } else if shouldShowEmptyState {
                     emptyState
                 } else {
                     cityList
@@ -40,6 +74,12 @@ struct ManualLocationView: View {
             .padding(.bottom, 24)
         }
         .preferredColorScheme(.light)
+        .onChange(of: searchText) { _, newValue in
+            scheduleSearch(for: newValue)
+        }
+        .onDisappear {
+            searchTask?.cancel()
+        }
     }
 
     private var header: some View {
@@ -49,7 +89,7 @@ struct ManualLocationView: View {
                     .font(.system(size: 26, weight: .heavy, design: .rounded))
                     .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-                Text("Select a city for local Weather Insights powered by your saved coordinates.")
+                Text("Search worldwide cities and locations for local Weather Insights powered by saved coordinates.")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
@@ -99,7 +139,9 @@ struct ManualLocationView: View {
     private var cityList: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 10) {
-                ForEach(filteredCities) { city in
+                SectionTitle(title: titleText)
+
+                ForEach(visibleLocations) { city in
                     Button {
                         HapticFeedback.success()
                         locationViewModel.selectManualCity(city)
@@ -118,15 +160,16 @@ struct ManualLocationView: View {
         }
     }
 
-    private var emptyState: some View {
-        VStack(spacing: 10) {
-            SymbolBadge(symbol: "magnifyingglass", tint: RoomlyTheme.ColorToken.orange, size: 46)
+    private var loadingState: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .tint(RoomlyTheme.ColorToken.primaryBlue)
 
-            Text("No city found")
-                .font(.system(size: 18, weight: .heavy, design: .rounded))
+            Text("Searching locations")
+                .font(.system(size: 17, weight: .heavy, design: .rounded))
                 .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-            Text("Try one of the suggested cities for this prototype.")
+            Text("Checking Open-Meteo for matching cities worldwide.")
                 .font(.system(size: 13, weight: .medium))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
@@ -134,6 +177,121 @@ struct ManualLocationView: View {
         .frame(maxWidth: .infinity)
         .padding(24)
         .roomlyCard()
+    }
+
+    private var minimumQueryState: some View {
+        VStack(spacing: 10) {
+            SymbolBadge(symbol: "keyboard.fill", tint: RoomlyTheme.ColorToken.primaryBlue, size: 46)
+
+            Text("Keep typing")
+                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .foregroundStyle(RoomlyTheme.ColorToken.ink)
+
+            Text("Enter at least two characters to search worldwide locations.")
+                .font(.system(size: 13, weight: .medium))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(24)
+        .roomlyCard()
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 10) {
+            SymbolBadge(symbol: "magnifyingglass", tint: RoomlyTheme.ColorToken.orange, size: 46)
+
+            Text("No location found")
+                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .foregroundStyle(RoomlyTheme.ColorToken.ink)
+
+            Text("Try a city name, region, or nearby larger location.")
+                .font(.system(size: 13, weight: .medium))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(24)
+        .roomlyCard()
+    }
+
+    private func errorState(_ message: String) -> some View {
+        VStack(spacing: 10) {
+            SymbolBadge(symbol: "wifi.exclamationmark", tint: RoomlyTheme.ColorToken.orange, size: 46)
+
+            Text("Search unavailable")
+                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .foregroundStyle(RoomlyTheme.ColorToken.ink)
+
+            Text(message)
+                .font(.system(size: 13, weight: .medium))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+
+            Button {
+                scheduleSearch(for: searchText)
+            } label: {
+                Text("Try Again")
+                    .font(.system(size: 13, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .frame(height: 38)
+                    .background(RoomlyTheme.ctaGradient, in: Capsule())
+            }
+            .buttonStyle(PressableButtonStyle())
+        }
+        .frame(maxWidth: .infinity)
+        .padding(24)
+        .roomlyCard()
+    }
+
+    private func scheduleSearch(for text: String) {
+        searchTask?.cancel()
+
+        let query = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else {
+            searchResults = []
+            searchError = nil
+            isSearching = false
+            return
+        }
+
+        guard query.count >= 2 else {
+            searchResults = []
+            searchError = nil
+            isSearching = false
+            return
+        }
+
+        searchError = nil
+        searchTask = Task {
+            do {
+                try await Task.sleep(nanoseconds: 400_000_000)
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    isSearching = true
+                }
+
+                let results = try await geocodingService.searchLocations(query: query)
+                guard !Task.isCancelled else { return }
+
+                await MainActor.run {
+                    searchResults = results
+                    searchError = nil
+                    isSearching = false
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    searchResults = []
+                    searchError = error.localizedDescription
+                    isSearching = false
+                }
+            }
+        }
     }
 }
 
@@ -154,9 +312,10 @@ private struct ManualLocationRow: View {
                     .font(.system(size: 16, weight: .heavy, design: .rounded))
                     .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-                Text(city.coordinate.formatted)
+                Text(city.subtitle)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+                    .lineLimit(2)
             }
 
             Spacer()

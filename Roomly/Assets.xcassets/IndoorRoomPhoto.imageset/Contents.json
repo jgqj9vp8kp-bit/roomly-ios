@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "indoor-room-photo.jpg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

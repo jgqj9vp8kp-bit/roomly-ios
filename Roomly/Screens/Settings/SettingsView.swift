@@ -8,6 +8,7 @@ struct SettingsView: View {
     let onResetOnboarding: () -> Void
     let onResetRoomSettings: () -> Void
     let onShowPaywall: () -> Void
+    @AppStorage("hasUserSelectedTemperatureUnit") private var hasUserSelectedTemperatureUnit = false
     @State private var showsManualLocation = false
 
     var body: some View {
@@ -70,7 +71,7 @@ struct SettingsView: View {
                     .font(.system(size: 14, weight: .heavy))
                     .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-                Picker("Temperature Units", selection: $viewModel.temperatureUnit) {
+                Picker("Temperature Units", selection: temperatureUnitBinding) {
                     ForEach(TemperatureUnit.allCases) { unit in
                         Text(unit.title).tag(unit)
                     }
@@ -236,10 +237,20 @@ private extension SettingsView {
         case .gps:
             locationViewModel.activeCoordinates?.formatted ?? "Using current device location"
         case .manual:
-            "Manual city · \(locationViewModel.activeCoordinates?.formatted ?? "coordinates saved")"
+            locationViewModel.selectedManualCity?.subtitle ?? "Manual location saved"
         case .none:
             "No active location selected"
         }
+    }
+
+    var temperatureUnitBinding: Binding<TemperatureUnit> {
+        Binding(
+            get: { viewModel.temperatureUnit },
+            set: { newValue in
+                hasUserSelectedTemperatureUnit = true
+                viewModel.temperatureUnit = newValue
+            }
+        )
     }
 }
 

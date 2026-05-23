@@ -150,4 +150,45 @@ final class RoomlyTests: XCTestCase {
 
         XCTAssertLessThan(abs(strongEstimate - 22), abs(lightEstimate - 22))
     }
+
+    func testTemperatureUnitConversionsRoundTrip() {
+        XCTAssertEqual(TemperatureUnit.fahrenheit.formatted(celsius: 22), "72°F")
+        XCTAssertEqual(TemperatureUnit.celsius.formatted(celsius: 22), "22°C")
+        XCTAssertEqual(TemperatureUnit.fahrenheit.celsiusValue(from: 68), 20, accuracy: 0.001)
+        XCTAssertEqual(TemperatureUnit.fahrenheit.celsiusDelta(from: 9), 5, accuracy: 0.001)
+    }
+
+    func testRoomSettingsPersistAndReset() {
+        let defaults = UserDefaults(suiteName: "RoomlyTests-\(UUID().uuidString)")!
+        let settings = RoomSettings(
+            isACOn: true,
+            acTemperatureCelsius: 21,
+            isHeaterOn: true,
+            heaterTemperatureCelsius: 23,
+            isFanOn: true,
+            fanCoolingEffectCelsius: 1.5,
+            insulationType: .strong
+        )
+
+        settings.save(to: defaults)
+        XCTAssertEqual(RoomSettings.load(from: defaults), settings)
+
+        RoomSettings.reset(in: defaults)
+        XCTAssertEqual(RoomSettings.load(from: defaults), .defaults)
+    }
+
+    func testLocationDisplayNameIncludesRegionAndCountry() {
+        let result = LocationSearchResult(
+            name: "Paris",
+            country: "France",
+            adminRegion: "Ile-de-France",
+            latitude: 48.8566,
+            longitude: 2.3522,
+            timezone: "Europe/Paris"
+        )
+        let city = ManualLocationCity(searchResult: result)
+
+        XCTAssertEqual(city.fullDisplayName, "Paris, Ile-de-France, France")
+        XCTAssertEqual(city.subtitle, "Ile-de-France, France")
+    }
 }

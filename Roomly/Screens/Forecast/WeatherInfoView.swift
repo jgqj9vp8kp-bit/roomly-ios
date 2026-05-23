@@ -2,6 +2,7 @@ import SwiftUI
 
 struct WeatherInfoView: View {
     @ObservedObject var weatherViewModel: WeatherViewModel
+    var showsBackButton = true
 
     var body: some View {
         ZStack {
@@ -9,7 +10,7 @@ struct WeatherInfoView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
-                    DetailNavigationBar(title: "Weather Info", trailingSymbol: "location.fill") {}
+                    DetailNavigationBar(title: "Weather Info", trailingSymbol: "location.fill", trailingAction: {}, showsBackButton: showsBackButton)
                         .padding(.top, 14)
 
                     content
@@ -157,29 +158,31 @@ struct WeatherInfoView: View {
                     .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
                     .frame(maxWidth: .infinity, minHeight: 104)
             } else {
-                HStack(spacing: 10) {
-                    ForEach(hourly) { item in
-                        VStack(spacing: 8) {
-                            Text(item.time)
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.75)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(hourly) { item in
+                            VStack(spacing: 8) {
+                                Text(item.time)
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.75)
 
-                            Image(systemName: item.symbol)
-                                .font(.system(size: 22, weight: .bold))
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue, RoomlyTheme.ColorToken.sun)
+                                Image(systemName: item.symbol)
+                                    .font(.system(size: 22, weight: .bold))
+                                    .symbolRenderingMode(.palette)
+                                    .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue, RoomlyTheme.ColorToken.sun)
 
-                            Text(item.temperature)
-                                .font(.system(size: 17, weight: .heavy, design: .rounded))
-                                .foregroundStyle(RoomlyTheme.ColorToken.ink)
+                                Text(item.temperature)
+                                    .font(.system(size: 17, weight: .heavy, design: .rounded))
+                                    .foregroundStyle(RoomlyTheme.ColorToken.ink)
+                            }
+                            .frame(width: 72, height: 104)
+                            .background(item.time == "Now" ? RoomlyTheme.ColorToken.tileSelected : .white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .shadow(color: RoomlyTheme.Shadow.soft.opacity(0.55), radius: 12, x: 0, y: 5)
                         }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 104)
-                        .background(item.time == "Now" ? RoomlyTheme.ColorToken.tileSelected : .white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .shadow(color: RoomlyTheme.Shadow.soft.opacity(0.55), radius: 12, x: 0, y: 5)
                     }
+                    .padding(.vertical, 2)
                 }
             }
         }
@@ -196,8 +199,15 @@ struct WeatherInfoView: View {
                     .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
                     .frame(maxWidth: .infinity, minHeight: 80)
             } else {
+                let minTemperature = daily.map(\.low).min() ?? 0
+                let maxTemperature = daily.map(\.high).max() ?? 1
+
                 ForEach(daily) { item in
-                    ForecastListRow(item: item)
+                    ForecastListRow(
+                        item: item,
+                        minTemperature: minTemperature,
+                        maxTemperature: maxTemperature
+                    )
                 }
             }
         }

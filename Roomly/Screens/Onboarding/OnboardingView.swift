@@ -5,15 +5,16 @@ struct OnboardingView: View {
     let onComplete: () -> Void
 
     @State private var selectedPage = 0
-    @State private var showsLocationStep = false
+    @State private var isShowingLocationStep = false
     @State private var showsManualLocation = false
     private let pages = MockOnboardingData.pages
+    private let totalFlowSteps = 3
 
     var body: some View {
         ZStack {
             Color.white.ignoresSafeArea()
 
-            if showsLocationStep {
+            if isShowingLocationStep {
                 OnboardingLocationStep(
                     locationViewModel: locationViewModel,
                     onManualLocation: {
@@ -28,7 +29,7 @@ struct OnboardingView: View {
                         OnboardingPageView(
                             page: page,
                             selectedPage: selectedPage,
-                            pageCount: pages.count
+                            pageCount: totalFlowSteps
                         ) {
                             advance(from: index)
                         }
@@ -42,11 +43,8 @@ struct OnboardingView: View {
                 .transition(.opacity.combined(with: .move(edge: .leading)))
             }
         }
-        .animation(.spring(response: 0.45, dampingFraction: 0.86), value: showsLocationStep)
         .fullScreenCover(isPresented: $showsManualLocation) {
-            ManualLocationView(locationViewModel: locationViewModel) {
-                onComplete()
-            }
+            ManualLocationView(locationViewModel: locationViewModel, onSelectionComplete: onComplete)
         }
     }
 
@@ -54,7 +52,7 @@ struct OnboardingView: View {
         HapticFeedback.selection()
         if index == pages.count - 1 {
             withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
-                showsLocationStep = true
+                isShowingLocationStep = true
             }
         } else {
             withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {

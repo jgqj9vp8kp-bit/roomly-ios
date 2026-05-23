@@ -24,7 +24,7 @@ enum MockOnboardingData {
             kind: .location
         ),
         OnboardingPage(
-            title: "Estimated Room Comfort",
+            title: "Indoor Comfort Insights",
             subtitle: "Get personalized indoor comfort estimates based on weather and room conditions.",
             symbol: "house.fill",
             accent: RoomlyTheme.ColorToken.green,

@@ -61,117 +61,124 @@ struct RoomSetupView: View {
 
     private var setupContent: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 14) {
-                RoomControlToggleRow(
-                    title: "Is AC on?",
-                    subtitle: "Cooling affects comfort estimate",
-                    symbol: "snowflake",
-                    isOn: $isACOn
-                )
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    VStack(spacing: 14) {
+                        RoomControlToggleRow(
+                            title: "Is AC on?",
+                            subtitle: "Cooling affects comfort estimate",
+                            symbol: "snowflake",
+                            isOn: $isACOn
+                        )
 
-                if isACOn {
-                    RoomTemperatureInputCard(
-                        title: "AC Temperature",
-                        placeholder: "Enter AC Temperature",
-                        value: $acTemperature,
-                        unit: weatherViewModel.temperatureUnit
-                    )
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
+                        if isACOn {
+                            RoomTemperatureInputCard(
+                                title: "AC Temperature",
+                                placeholder: "Enter AC Temperature",
+                                value: $acTemperature,
+                                unit: weatherViewModel.temperatureUnit
+                            )
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
 
-                RoomControlToggleRow(
-                    title: "Is heater on?",
-                    subtitle: "Heating adds indoor context",
-                    symbol: "flame.fill",
-                    isOn: $isHeaterOn
-                )
+                        RoomControlToggleRow(
+                            title: "Is heater on?",
+                            subtitle: "Heating adds indoor context",
+                            symbol: "flame.fill",
+                            isOn: $isHeaterOn
+                        )
 
-                if isHeaterOn {
-                    RoomTemperatureInputCard(
-                        title: "Heater Temperature",
-                        placeholder: "Enter Heater Temperature",
-                        value: $heaterTemperature,
-                        unit: weatherViewModel.temperatureUnit
-                    )
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
+                        if isHeaterOn {
+                            RoomTemperatureInputCard(
+                                title: "Heater Temperature",
+                                placeholder: "Enter Heater Temperature",
+                                value: $heaterTemperature,
+                                unit: weatherViewModel.temperatureUnit
+                            )
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
 
-                RoomControlToggleRow(
-                    title: "Is fan on?",
-                    subtitle: "Air movement improves comfort",
-                    symbol: "fan.fill",
-                    isOn: $isFanOn
-                )
+                        RoomControlToggleRow(
+                            title: "Is fan on?",
+                            subtitle: "Air movement improves comfort",
+                            symbol: "fan.fill",
+                            isOn: $isFanOn
+                        )
 
-                if isFanOn {
-                    RoomTemperatureInputCard(
-                        title: "Fan Effect",
-                        placeholder: "Enter fan cooling effect",
-                        value: $fanCoolingEffect,
-                        unit: weatherViewModel.temperatureUnit
-                    )
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 12)
-            .background(RoomlyTheme.ColorToken.tile)
-            .animation(.spring(response: 0.42, dampingFraction: 0.88), value: isACOn)
-            .animation(.spring(response: 0.42, dampingFraction: 0.88), value: isHeaterOn)
-            .animation(.spring(response: 0.42, dampingFraction: 0.88), value: isFanOn)
-
-            VStack(spacing: 28) {
-                VStack(alignment: .leading, spacing: 16) {
-                    SectionTitle(title: "Insulation Type")
-
-                    HStack(spacing: 10) {
-                        ForEach(InsulationType.allCases) { option in
-                            Button {
-                                HapticFeedback.light()
-                                insulation = option
-                            } label: {
-                                Text(option.title)
-                                    .font(.system(size: 13, weight: .heavy))
-                                    .foregroundStyle(insulation == option ? .white : RoomlyTheme.ColorToken.secondaryInk)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 42)
-                                    .background(
-                                        insulation == option ? AnyShapeStyle(RoomlyTheme.ctaGradient) : AnyShapeStyle(RoomlyTheme.ColorToken.surfaceBlue),
-                                        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    )
-                            }
-                            .buttonStyle(.plain)
+                        if isFanOn {
+                            RoomTemperatureInputCard(
+                                title: "Fan Effect",
+                                placeholder: "Enter fan cooling effect",
+                                value: $fanCoolingEffect,
+                                unit: weatherViewModel.temperatureUnit
+                            )
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                     }
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 12)
+                    .background(RoomlyTheme.ColorToken.tile)
+                    .animation(.spring(response: 0.42, dampingFraction: 0.88), value: isACOn)
+                    .animation(.spring(response: 0.42, dampingFraction: 0.88), value: isHeaterOn)
+                    .animation(.spring(response: 0.42, dampingFraction: 0.88), value: isFanOn)
+
+                    VStack(spacing: 28) {
+                        VStack(alignment: .leading, spacing: 16) {
+                            SectionTitle(title: "Insulation Type")
+
+                            HStack(spacing: 10) {
+                                ForEach(InsulationType.allCases) { option in
+                                    Button {
+                                        HapticFeedback.light()
+                                        insulation = option
+                                    } label: {
+                                        Text(option.title)
+                                            .font(.system(size: 13, weight: .heavy))
+                                            .foregroundStyle(insulation == option ? .white : RoomlyTheme.ColorToken.secondaryInk)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 42)
+                                            .background(
+                                                insulation == option ? AnyShapeStyle(RoomlyTheme.ctaGradient) : AnyShapeStyle(RoomlyTheme.ColorToken.surfaceBlue),
+                                                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                        .padding(18)
+                        .background(Color(red: 0.933, green: 0.949, blue: 0.969), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+                        .shadow(color: RoomlyTheme.Shadow.blue.opacity(0.5), radius: 22, x: 0, y: 10)
+
+                        if let validationMessage {
+                            Text(validationMessage)
+                                .font(.system(size: 13, weight: .semibold))
+                                .multilineTextAlignment(.center)
+                                .foregroundStyle(RoomlyTheme.ColorToken.orange)
+                                .padding(.horizontal, 12)
+                        }
+
+                        Text("You can change these room settings anytime based on your comfort or room conditions.")
+                            .font(.system(size: 17, weight: .medium))
+                            .lineSpacing(3)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(RoomlyTheme.ColorToken.tertiaryInk)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
                 }
-                .padding(18)
-                .background(Color(red: 0.933, green: 0.949, blue: 0.969), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
-                .shadow(color: RoomlyTheme.Shadow.blue.opacity(0.5), radius: 22, x: 0, y: 10)
+            }
+            .background(RoomlyTheme.ColorToken.background)
 
-                if let validationMessage {
-                    Text(validationMessage)
-                        .font(.system(size: 13, weight: .semibold))
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(RoomlyTheme.ColorToken.orange)
-                        .padding(.horizontal, 12)
-                }
-
-                Text("You can change these room settings anytime based on your comfort or room conditions.")
-                    .font(.system(size: 17, weight: .medium))
-                    .lineSpacing(3)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(RoomlyTheme.ColorToken.tertiaryInk)
-
-                Spacer()
-
+            VStack(spacing: 0) {
                 PremiumButton(title: "Set Data") {
                     saveRoomSettings()
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.top, 12)
+            .padding(.bottom, 28)
             .background(RoomlyTheme.ColorToken.background)
         }
     }
@@ -200,7 +207,7 @@ struct RoomSetupView: View {
             }
         } catch {
             HapticFeedback.warning()
-            validationMessage = "Enter numbers only for active room settings, or leave optional fields blank."
+            validationMessage = validationText(for: error)
         }
     }
 
@@ -218,11 +225,17 @@ struct RoomSetupView: View {
 
     private func optionalTemperature(_ value: String, field: String) throws -> Double? {
         guard let number = try optionalNumber(value, field: field) else { return nil }
+        guard temperatureRange.contains(number) else {
+            throw ValidationError.outOfRange("\(field) should be between \(formatRange(temperatureRange)) \(weatherViewModel.temperatureUnit.shortTitle).")
+        }
         return weatherViewModel.temperatureUnit.celsiusValue(from: number)
     }
 
     private func optionalFanEffect(_ value: String) throws -> Double? {
         guard let number = try optionalNumber(value, field: "Fan Effect") else { return nil }
+        guard fanEffectRange.contains(number) else {
+            throw ValidationError.outOfRange("Fan Effect should be between \(formatRange(fanEffectRange)) \(weatherViewModel.temperatureUnit.shortTitle).")
+        }
         return weatherViewModel.temperatureUnit.celsiusDelta(from: number)
     }
 
@@ -242,10 +255,46 @@ struct RoomSetupView: View {
 
         return String(format: "%.1f", value)
     }
+
+    private var temperatureRange: ClosedRange<Double> {
+        switch weatherViewModel.temperatureUnit {
+        case .celsius:
+            5...35
+        case .fahrenheit:
+            40...95
+        }
+    }
+
+    private var fanEffectRange: ClosedRange<Double> {
+        switch weatherViewModel.temperatureUnit {
+        case .celsius:
+            0...6
+        case .fahrenheit:
+            0...12
+        }
+    }
+
+    private func validationText(for error: Error) -> String {
+        guard let validationError = error as? ValidationError else {
+            return "Enter numbers only for active room settings, or leave optional fields blank."
+        }
+
+        switch validationError {
+        case .invalidNumber(let field):
+            return "\(field) needs a numeric value, or leave it blank."
+        case .outOfRange(let message):
+            return message
+        }
+    }
+
+    private func formatRange(_ range: ClosedRange<Double>) -> String {
+        "\(formatInput(range.lowerBound))-\(formatInput(range.upperBound))"
+    }
 }
 
 private enum ValidationError: Error {
     case invalidNumber(String)
+    case outOfRange(String)
 }
 
 private struct RoomControlToggleRow: View {

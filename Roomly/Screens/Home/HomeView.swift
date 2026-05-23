@@ -117,44 +117,10 @@ struct HomeView: View {
             .simultaneousGesture(TapGesture().onEnded { HapticFeedback.light() })
             .cardEntrance(delay: 0.18)
 
-            metricGrid(dashboard.dashboardMetrics)
-                .cardEntrance(delay: 0.23)
-
-            NavigationLink(value: RoomlyRoute.roomSetup) {
-                roomSetupRow
-            }
-            .buttonStyle(.plain)
-            .simultaneousGesture(TapGesture().onEnded { HapticFeedback.light() })
-            .cardEntrance(delay: 0.28)
-
             dailyInsights(dashboard)
-                .cardEntrance(delay: 0.33)
+                .cardEntrance(delay: 0.23)
         }
         .animation(.spring(response: 0.55, dampingFraction: 0.86), value: dashboard.comfort.index)
-    }
-
-    private var roomSetupRow: some View {
-        HStack(spacing: 12) {
-            SymbolBadge(symbol: "slider.horizontal.3", tint: RoomlyTheme.ColorToken.primaryBlue, size: 40)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Set Room Info")
-                    .font(.system(size: 16, weight: .heavy, design: .rounded))
-                    .foregroundStyle(RoomlyTheme.ColorToken.ink)
-
-                Text("Update room conditions for Indoor Comfort insights.")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(RoomlyTheme.ColorToken.tertiaryInk)
-        }
-        .padding(14)
-        .roomlyCard()
     }
 
     private func dashboardSubtitle(for dashboard: WeatherDashboard) -> String {

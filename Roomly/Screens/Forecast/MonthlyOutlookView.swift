@@ -9,7 +9,7 @@ struct MonthlyOutlookView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 14) {
-                    DetailNavigationBar(title: "Comfort Outlook", subtitle: "7-day planning view", trailingSymbol: "calendar") {}
+                    DetailNavigationBar(title: "Comfort Outlook", subtitle: "7-day planning view", trailingSymbol: "calendar", trailingAction: {})
                         .padding(.top, 12)
 
                     content
@@ -71,8 +71,8 @@ struct MonthlyOutlookView: View {
             SectionTitle(title: "Comfort Trend")
             comfortTrend(dashboard)
 
-            SectionTitle(title: "Calendar Preview")
-            calendarPreview
+            SectionTitle(title: "Calendar Preview", trailing: "Month")
+            calendarPreview(dashboard)
 
             monthlyAlerts(dashboard)
         }
@@ -129,13 +129,15 @@ struct MonthlyOutlookView: View {
     }
 
     private func trendCard(_ dashboard: WeatherDashboard) -> some View {
-        VStack(spacing: 12) {
+        let trend = TemperatureTrend(daily: dashboard.daily)
+
+        return VStack(spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Temperature Trend")
                         .font(.system(size: 17, weight: .heavy))
                         .foregroundStyle(RoomlyTheme.ColorToken.ink)
-                    Text("Indoor Estimate follows available weather patterns")
+                    Text(trend.subtitle)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
                 }
@@ -143,26 +145,52 @@ struct MonthlyOutlookView: View {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(dashboard.comfort.level.rawValue)
+                    Text(trend.title)
                         .font(.system(size: 18, weight: .heavy, design: .rounded))
-                        .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue)
-                    Text("comfort")
+                        .foregroundStyle(trend.tint)
+                    Text(trend.deltaText)
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(RoomlyTheme.ColorToken.tertiaryInk)
                 }
             }
 
-            TrendPlot()
+            TrendPlot(trend: trend)
                 .frame(height: 126)
 
             HStack {
-                ForEach(["1", "2", "3", "4", "5", "7"], id: \.self) { label in
-                    Text(label)
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Color(red: 0.561, green: 0.651, blue: 0.737))
-                    if label != "7" { Spacer() }
+                ForEach(Array(trend.dayLabels.enumerated()), id: \.offset) { index, label in
+                    VStack(spacing: 2) {
+                        Text(label)
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color(red: 0.561, green: 0.651, blue: 0.737))
+
+                        Text(index < trend.temperatureLabels.count ? trend.temperatureLabels[index] : "")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(index == trend.dayLabels.count - 1 ? trend.tint : RoomlyTheme.ColorToken.tertiaryInk)
+                    }
+                    .frame(width: 28)
+
+                    if index != trend.dayLabels.count - 1 {
+                        Spacer()
+                    }
                 }
             }
+
+            HStack(spacing: 8) {
+                Image(systemName: trend.symbol)
+                    .font(.system(size: 13, weight: .heavy))
+                    .foregroundStyle(trend.tint)
+
+                Text(trend.insight)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+                    .lineLimit(2)
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(trend.tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .padding(16)
         .roomlyCard(cornerRadius: 24, stroke: Color(red: 0.882, green: 0.941, blue: 1))
@@ -202,19 +230,34 @@ struct MonthlyOutlookView: View {
         }
     }
 
-    private var calendarPreview: some View {
-        VStack(spacing: 8) {
-            ForEach(0..<5, id: \.self) { row in
-                HStack(spacing: 7) {
-                    ForEach(0..<7, id: \.self) { column in
-                        let day = row * 7 + column + 1
-                        CalendarDayCell(day: day, highlighted: [6, 11, 12, 18, 22, 26, 30].contains(day))
-                    }
-                }
-                .frame(height: 44)
+    private func calendarPreview(_ dashboard: WeatherDashboard) -> some View {
+        let days = CalendarPreviewDay.make(from: dashboard.daily)
+        let rows = days.chunked(into: 7)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                CalendarLegendItem(label: "Best", color: RoomlyTheme.ColorToken.green)
+                CalendarLegendItem(label: "Warm", color: RoomlyTheme.ColorToken.orange)
+                CalendarLegendItem(label: "Rain", color: RoomlyTheme.ColorToken.primaryBlue)
+                CalendarLegendItem(label: "Steady", color: RoomlyTheme.ColorToken.purple)
             }
+
+            VStack(spacing: 8) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, rowDays in
+                    HStack(spacing: 7) {
+                        ForEach(rowDays) { day in
+                            CalendarDayCell(day: day)
+                        }
+                    }
+                    .frame(height: 72)
+                }
+            }
+
+            Text("First 7 days use forecast data. Later days are projected from the same pattern.")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(RoomlyTheme.ColorToken.tertiaryInk)
         }
-        .padding(12)
+        .padding(14)
         .roomlyCard(cornerRadius: 22)
     }
 
@@ -256,56 +299,181 @@ private struct SummaryTile: View {
     }
 }
 
+private struct TemperatureTrend {
+    let values: [Int]
+    let dayLabels: [String]
+
+    init(daily: [DailyForecast]) {
+        let usableDays = daily.isEmpty ? MockWeatherData.daily : daily
+        values = usableDays.map(\.high)
+        dayLabels = usableDays.map { item in
+            item.day == "Today" ? "Now" : item.day
+        }
+    }
+
+    var title: String {
+        switch direction {
+        case .warming:
+            "Warming"
+        case .cooling:
+            "Cooling"
+        case .stable:
+            "Stable"
+        }
+    }
+
+    var subtitle: String {
+        "Highs across the available 7-day forecast"
+    }
+
+    var deltaText: String {
+        guard let first = values.first, let last = values.last else {
+            return "No trend"
+        }
+
+        let delta = last - first
+        if delta == 0 {
+            return "0° change"
+        }
+        return "\(delta > 0 ? "+" : "")\(delta)° by end"
+    }
+
+    var insight: String {
+        switch direction {
+        case .warming:
+            "Temperatures trend upward later in the forecast."
+        case .cooling:
+            "Temperatures ease cooler later in the forecast."
+        case .stable:
+            "Temperatures stay fairly steady across the forecast."
+        }
+    }
+
+    var symbol: String {
+        switch direction {
+        case .warming:
+            "arrow.up.right"
+        case .cooling:
+            "arrow.down.right"
+        case .stable:
+            "arrow.right"
+        }
+    }
+
+    var tint: Color {
+        switch direction {
+        case .warming:
+            RoomlyTheme.ColorToken.orange
+        case .cooling:
+            RoomlyTheme.ColorToken.primaryBlue
+        case .stable:
+            RoomlyTheme.ColorToken.green
+        }
+    }
+
+    var temperatureLabels: [String] {
+        values.map { "\($0)°" }
+    }
+
+    var minValue: Int {
+        values.min() ?? 0
+    }
+
+    var maxValue: Int {
+        values.max() ?? 1
+    }
+
+    private var direction: Direction {
+        guard let first = values.first, let last = values.last else {
+            return .stable
+        }
+
+        let delta = last - first
+        if delta >= 3 {
+            return .warming
+        } else if delta <= -3 {
+            return .cooling
+        } else {
+            return .stable
+        }
+    }
+
+    private enum Direction {
+        case warming
+        case cooling
+        case stable
+    }
+}
+
 private struct TrendPlot: View {
+    let trend: TemperatureTrend
+
     var body: some View {
-        ZStack {
+        GeometryReader { proxy in
+            let rect = CGRect(
+                x: 16,
+                y: 20,
+                width: max(1, proxy.size.width - 32),
+                height: max(1, proxy.size.height - 40)
+            )
+            let points = plotPoints(in: rect)
+
+            ZStack {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(RoomlyTheme.ColorToken.tile)
                 .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color(red: 0.886, green: 0.945, blue: 1), lineWidth: 1))
 
-            VStack(spacing: 35) {
+                VStack(spacing: rect.height / 2) {
                 ForEach(0..<3, id: \.self) { _ in
                     Rectangle()
                         .fill(Color(red: 0.851, green: 0.925, blue: 1))
                         .frame(height: 1)
                 }
             }
-            .padding(.horizontal, 14)
+                .padding(.horizontal, 14)
 
-            TrendArea()
-                .fill(LinearGradient(colors: [RoomlyTheme.ColorToken.sky.opacity(0.22), RoomlyTheme.ColorToken.sky.opacity(0.0)], startPoint: .top, endPoint: .bottom))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 20)
+                trendArea(points: points, baseline: rect.maxY)
+                    .fill(LinearGradient(colors: [trend.tint.opacity(0.24), trend.tint.opacity(0.0)], startPoint: .top, endPoint: .bottom))
 
-            TrendLine()
-                .stroke(RoomlyTheme.ColorToken.primaryBlue, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 20)
+                trendLine(points: points)
+                    .stroke(trend.tint, style: StrokeStyle(lineWidth: 3.5, lineCap: .round, lineJoin: .round))
+
+                ForEach(Array(points.enumerated()), id: \.offset) { index, point in
+                    Circle()
+                        .fill(index == points.count - 1 ? trend.tint : .white)
+                        .frame(width: index == points.count - 1 ? 9 : 7, height: index == points.count - 1 ? 9 : 7)
+                        .overlay(Circle().stroke(trend.tint, lineWidth: 2))
+                        .position(point)
+                }
+            }
         }
     }
-}
 
-private struct TrendLine: Shape {
-    func path(in rect: CGRect) -> Path {
+    private func plotPoints(in rect: CGRect) -> [CGPoint] {
+        guard !trend.values.isEmpty else { return [] }
+        let span = max(1, Double(trend.maxValue - trend.minValue))
+        let xStep = trend.values.count == 1 ? 0 : rect.width / CGFloat(trend.values.count - 1)
+
+        return trend.values.enumerated().map { index, value in
+            let normalized = (Double(value - trend.minValue) / span)
+            let y = rect.maxY - CGFloat(normalized) * rect.height
+            return CGPoint(x: rect.minX + CGFloat(index) * xStep, y: y)
+        }
+    }
+
+    private func trendLine(points: [CGPoint]) -> Path {
         var path = Path()
-        let points = [
-            CGPoint(x: rect.minX, y: rect.maxY * 0.72),
-            CGPoint(x: rect.minX + rect.width * 0.24, y: rect.maxY * 0.58),
-            CGPoint(x: rect.minX + rect.width * 0.45, y: rect.maxY * 0.48),
-            CGPoint(x: rect.minX + rect.width * 0.68, y: rect.maxY * 0.36),
-            CGPoint(x: rect.minX + rect.width * 0.87, y: rect.maxY * 0.26),
-            CGPoint(x: rect.maxX, y: rect.maxY * 0.22)
-        ]
+        guard let first = points.first else { return path }
+        path.move(to: first)
         path.addLines(points)
         return path
     }
-}
 
-private struct TrendArea: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = TrendLine().path(in: rect)
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+    private func trendArea(points: [CGPoint], baseline: CGFloat) -> Path {
+        var path = trendLine(points: points)
+        guard let first = points.first, let last = points.last else { return path }
+        path.addLine(to: CGPoint(x: last.x, y: baseline))
+        path.addLine(to: CGPoint(x: first.x, y: baseline))
         path.closeSubpath()
         return path
     }
@@ -381,20 +549,165 @@ private struct ComfortTrendRow: View {
 }
 
 private struct CalendarDayCell: View {
-    let day: Int
-    let highlighted: Bool
+    let day: CalendarPreviewDay
 
     var body: some View {
-        VStack(spacing: 1) {
-            Text("\(day)")
-                .font(.system(size: 12, weight: .heavy))
-                .foregroundStyle(RoomlyTheme.ColorToken.ink)
-            Circle()
-                .fill(highlighted ? RoomlyTheme.ColorToken.primaryBlue : Color.clear)
-                .frame(width: 4, height: 4)
+        VStack(spacing: 4) {
+            HStack(spacing: 3) {
+                Text(day.label)
+                    .font(.system(size: 11, weight: .heavy))
+                    .foregroundStyle(day.isPlaceholder ? RoomlyTheme.ColorToken.tertiaryInk : RoomlyTheme.ColorToken.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+
+                if !day.isPlaceholder {
+                    Circle()
+                        .fill(day.status.color)
+                        .frame(width: 5, height: 5)
+                }
+            }
+
+            Image(systemName: day.symbol)
+                .font(.system(size: 14, weight: .bold))
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(day.status.color, RoomlyTheme.ColorToken.sun, RoomlyTheme.ColorToken.sky)
+                .frame(height: 16)
+                .opacity(day.isPlaceholder ? 0.0 : 1.0)
+
+            Text(day.temperatureText)
+                .font(.system(size: 9, weight: .bold, design: .rounded))
+                .foregroundStyle(day.isPlaceholder ? .clear : RoomlyTheme.ColorToken.secondaryInk)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(highlighted ? RoomlyTheme.ColorToken.tileSelected : RoomlyTheme.ColorToken.tile, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(day.background, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(day.status.color.opacity(day.isPlaceholder ? 0.0 : 0.18), lineWidth: 1)
+        )
+    }
+}
+
+private struct CalendarLegendItem: View {
+    let label: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(color)
+                .frame(width: 7, height: 7)
+
+            Text(label)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 7)
+        .background(RoomlyTheme.ColorToken.tile, in: Capsule())
+    }
+}
+
+private struct CalendarPreviewDay: Identifiable {
+    let id = UUID()
+    let label: String
+    let symbol: String
+    let high: Int?
+    let low: Int?
+    let status: CalendarPreviewStatus
+    let isPlaceholder: Bool
+
+    var temperatureText: String {
+        guard let high, let low else {
+            return "--"
+        }
+        return "\(high)°/\(low)°"
+    }
+
+    var background: Color {
+        isPlaceholder ? RoomlyTheme.ColorToken.tile.opacity(0.72) : status.color.opacity(0.10)
+    }
+
+    static func make(from daily: [DailyForecast]) -> [CalendarPreviewDay] {
+        let source = daily.isEmpty ? MockWeatherData.daily : daily
+        let highs = source.map(\.high)
+        let maxHigh = highs.max() ?? 0
+        let rainChances = source.map { Int($0.chance.replacingOccurrences(of: "%", with: "")) ?? 0 }
+        let minRain = rainChances.min() ?? 0
+
+        return (0..<35).map { index in
+            let item = source[index % source.count]
+            let rainChance = Int(item.chance.replacingOccurrences(of: "%", with: "")) ?? 0
+            let status = CalendarPreviewStatus.status(
+                high: item.high,
+                maxHigh: maxHigh,
+                rainChance: rainChance,
+                minRain: minRain
+            )
+
+            return CalendarPreviewDay(
+                label: label(for: index, item: item),
+                symbol: item.symbol,
+                high: projectedTemperature(item.high, dayIndex: index),
+                low: projectedTemperature(item.low, dayIndex: index),
+                status: status,
+                isPlaceholder: false
+            )
+        }
+    }
+
+    private static func label(for index: Int, item: DailyForecast) -> String {
+        if index == 0 {
+            return "Now"
+        }
+        if index < 7 {
+            return item.day
+        }
+        return "\(index + 1)"
+    }
+
+    private static func projectedTemperature(_ value: Int, dayIndex: Int) -> Int {
+        guard dayIndex >= 7 else { return value }
+        let drift = ((dayIndex / 7) % 3) - 1
+        return value + drift
+    }
+}
+
+private enum CalendarPreviewStatus {
+    case best
+    case warm
+    case rain
+    case steady
+
+    var color: Color {
+        switch self {
+        case .best:
+            RoomlyTheme.ColorToken.green
+        case .warm:
+            RoomlyTheme.ColorToken.orange
+        case .rain:
+            RoomlyTheme.ColorToken.primaryBlue
+        case .steady:
+            RoomlyTheme.ColorToken.purple
+        }
+    }
+
+    static func status(high: Int, maxHigh: Int, rainChance: Int, minRain: Int) -> CalendarPreviewStatus {
+        if rainChance >= 50 {
+            return .rain
+        }
+
+        if high >= maxHigh - 1 {
+            return .warm
+        }
+
+        if rainChance <= minRain + 5 {
+            return .best
+        }
+
+        return .steady
     }
 }
 

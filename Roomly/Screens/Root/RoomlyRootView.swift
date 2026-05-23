@@ -38,6 +38,7 @@ enum RoomlyTab: Hashable {
 struct RoomlyRootView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("temperatureUnit") private var temperatureUnitRawValue = TemperatureUnit.fahrenheit.rawValue
+    @AppStorage("hasUserSelectedTemperatureUnit") private var hasUserSelectedTemperatureUnit = false
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
 
     @StateObject private var weatherViewModel = WeatherViewModel()
@@ -69,10 +70,14 @@ struct RoomlyRootView: View {
         .task {
             syncSettingsFromStorage()
             await locationViewModel.fetchLocationIfAuthorized()
-            await weatherViewModel.loadIfNeeded(for: locationViewModel.activeWeatherLocation)
+            applyAutomaticTemperatureUnitIfNeeded()
+            await weatherViewModel.reload(for: locationViewModel.activeWeatherLocation, unit: settingsViewModel.temperatureUnit)
         }
         .onChange(of: locationViewModel.activeLocationKey) { _, _ in
             Task {
+                if applyAutomaticTemperatureUnitIfNeeded() {
+                    return
+                }
                 await weatherViewModel.reload(for: locationViewModel.activeWeatherLocation)
             }
         }
@@ -161,7 +166,11 @@ struct RoomlyRootView: View {
                 }
             }
         case .roomDetail:
-            RoomDetailView(weatherViewModel: weatherViewModel)
+            RoomDetailView(weatherViewModel: weatherViewModel) {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    path.wrappedValue.removeAll()
+                }
+            }
         case .weatherInfo:
             WeatherInfoView(weatherViewModel: weatherViewModel)
         case .monthlyOutlook:
@@ -173,6 +182,24 @@ struct RoomlyRootView: View {
         settingsViewModel.hasCompletedOnboarding = hasCompletedOnboarding
         settingsViewModel.temperatureUnit = TemperatureUnit(rawValue: temperatureUnitRawValue) ?? .fahrenheit
         settingsViewModel.notificationsEnabled = notificationsEnabled
+    }
+
+    @discardableResult
+    private func applyAutomaticTemperatureUnitIfNeeded() -> Bool {
+        guard !hasUserSelectedTemperatureUnit,
+              locationViewModel.locationSource == .manual,
+              let country = locationViewModel.selectedManualCity?.country else {
+            return false
+        }
+
+        let automaticUnit: TemperatureUnit = country == "United States" ? .fahrenheit : .celsius
+        guard settingsViewModel.temperatureUnit != automaticUnit else {
+            return false
+        }
+
+        settingsViewModel.temperatureUnit = automaticUnit
+        temperatureUnitRawValue = automaticUnit.rawValue
+        return true
     }
 
     private func showPaywall() {

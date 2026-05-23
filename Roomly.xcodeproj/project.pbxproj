@@ -37,6 +37,7 @@
 		2F0000412FB9FA00004F58B9 /* LocationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0000432FB9FA00004F58B9 /* LocationViewModel.swift */; };
 		2F0000442FB9FA00004F58B9 /* ManualLocationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0000452FB9FA00004F58B9 /* ManualLocationView.swift */; };
 		2F0000482FB9FA00004F58B9 /* ComfortEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0000472FB9FA00004F58B9 /* ComfortEngine.swift */; };
+		2F00004A2FB9FA00004F58B9 /* GeocodingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0000492FB9FA00004F58B9 /* GeocodingService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,6 +91,7 @@
 		2F0000432FB9FA00004F58B9 /* LocationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationViewModel.swift; sourceTree = "<group>"; };
 		2F0000452FB9FA00004F58B9 /* ManualLocationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualLocationView.swift; sourceTree = "<group>"; };
 		2F0000472FB9FA00004F58B9 /* ComfortEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComfortEngine.swift; sourceTree = "<group>"; };
+		2F0000492FB9FA00004F58B9 /* GeocodingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeocodingService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -269,6 +271,7 @@
 			children = (
 				2F00003C2FB9FA00004F58B9 /* WeatherService.swift */,
 				2F0000422FB9FA00004F58B9 /* LocationService.swift */,
+				2F0000492FB9FA00004F58B9 /* GeocodingService.swift */,
 				2F0000472FB9FA00004F58B9 /* ComfortEngine.swift */,
 			);
 			path = Services;
@@ -446,6 +449,7 @@
 				2F0000062FB9FA00004F58B9 /* ForecastView.swift in Sources */,
 				2F0000382FB9FA00004F58B9 /* WeatherService.swift in Sources */,
 				2F0000402FB9FA00004F58B9 /* LocationService.swift in Sources */,
+				2F00004A2FB9FA00004F58B9 /* GeocodingService.swift in Sources */,
 				2F0000482FB9FA00004F58B9 /* ComfortEngine.swift in Sources */,
 				2F0000322FB9FA00004F58B9 /* WeatherInfoView.swift in Sources */,
 				2F0000332FB9FA00004F58B9 /* MonthlyOutlookView.swift in Sources */,

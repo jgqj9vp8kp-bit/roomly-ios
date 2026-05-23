@@ -115,7 +115,15 @@ enum MockWeatherData {
         HourlyForecast(time: "Now", temperature: "14°", symbol: "cloud.sun.fill", chance: "39%"),
         HourlyForecast(time: "12 PM", temperature: "16°", symbol: "sun.max.fill", chance: "18%"),
         HourlyForecast(time: "1 PM", temperature: "18°", symbol: "cloud.sun.fill", chance: "22%"),
-        HourlyForecast(time: "2 PM", temperature: "19°", symbol: "cloud.fill", chance: "31%")
+        HourlyForecast(time: "2 PM", temperature: "19°", symbol: "cloud.fill", chance: "31%"),
+        HourlyForecast(time: "3 PM", temperature: "19°", symbol: "cloud.sun.fill", chance: "28%"),
+        HourlyForecast(time: "4 PM", temperature: "18°", symbol: "cloud.fill", chance: "34%"),
+        HourlyForecast(time: "5 PM", temperature: "17°", symbol: "cloud.rain.fill", chance: "48%"),
+        HourlyForecast(time: "6 PM", temperature: "16°", symbol: "cloud.rain.fill", chance: "52%"),
+        HourlyForecast(time: "7 PM", temperature: "15°", symbol: "cloud.moon.fill", chance: "36%"),
+        HourlyForecast(time: "8 PM", temperature: "14°", symbol: "moon.stars.fill", chance: "18%"),
+        HourlyForecast(time: "9 PM", temperature: "13°", symbol: "moon.fill", chance: "12%"),
+        HourlyForecast(time: "10 PM", temperature: "13°", symbol: "moon.fill", chance: "10%")
     ]
 
     static let daily: [DailyForecast] = [
@@ -149,14 +157,14 @@ enum MockWeatherData {
     ]
 
     static let premiumFeatures = [
-        "Indoor Comfort insights",
-        "Monthly Outlook planning",
-        "Humidity and pressure context",
-        "Weather widgets"
+        "Unlimited comfort checks",
+        "Advanced weather forecasts",
+        "Personalized comfort insights",
+        "Ad-free experience"
     ]
 
     static let premiumPlans = [
-        PremiumPlan(id: "weekly", title: "Weekly Plan", subtitle: "Flexible access", price: "$4.99", period: "week", badge: nil),
+        PremiumPlan(id: "weekly", title: "Weekly Plan", subtitle: "Flexible access", price: "$5.99", period: "week", badge: nil),
         PremiumPlan(id: "yearly", title: "Yearly Plan", subtitle: "$0.57 / week", price: "$29.99", period: "year", badge: "Best value")
     ]
 }

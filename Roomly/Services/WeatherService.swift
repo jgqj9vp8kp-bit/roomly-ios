@@ -407,7 +407,7 @@ private struct OpenMeteoDashboardMapper {
         }
 
         let startIndex = currentHourIndex(times: times) ?? 0
-        let endIndex = min(startIndex + 4, temperatures.count, times.count)
+        let endIndex = min(startIndex + 24, temperatures.count, times.count)
         guard startIndex < endIndex else { return [] }
 
         return (startIndex..<endIndex).map { index in
@@ -656,7 +656,7 @@ private struct OpenMeteoDashboardMapper {
     }
 }
 
-private extension Double {
+extension Double {
     func rounded(toPlaces places: Int) -> Double {
         let divisor = pow(10.0, Double(places))
         return (self * divisor).rounded() / divisor

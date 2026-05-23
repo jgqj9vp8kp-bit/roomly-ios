@@ -13,7 +13,8 @@ struct PaywallView: View {
 
             VStack(spacing: 0) {
                 hero
-                    .frame(height: 252)
+                    .frame(height: 310)
+                    .ignoresSafeArea(edges: .top)
 
                 bodyContent
                     .frame(maxHeight: .infinity, alignment: .top)
@@ -32,73 +33,87 @@ struct PaywallView: View {
     }
 
     private var hero: some View {
-        ZStack(alignment: .topTrailing) {
-            RoomlyTheme.blueGradient
+        GeometryReader { proxy in
+            let width = proxy.size.width
 
-            Circle()
-                .fill(Color.white.opacity(0.20))
-                .frame(width: 154, height: 154)
-                .offset(x: 44, y: -54)
+            ZStack(alignment: .topTrailing) {
+                Image("PaywallWeatherPhoto")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .clipped()
 
-            Circle()
-                .fill(RoomlyTheme.ColorToken.sun)
-                .frame(width: 94, height: 94)
-                .shadow(color: RoomlyTheme.ColorToken.sun.opacity(0.45), radius: 18, x: 0, y: 8)
-                .position(x: 146, y: 56)
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.098, green: 0.459, blue: 0.957).opacity(0.85),
+                        Color(red: 0.039, green: 0.341, blue: 0.847).opacity(0.70),
+                        .white.opacity(0.06)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
 
-            if showsCloseButton {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .heavy))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .background(Color.white.opacity(0.18), in: Circle())
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [Color(red: 1.0, green: 0.898, blue: 0.561).opacity(0.80), RoomlyTheme.ColorToken.sun.opacity(0.40), .clear],
+                            center: .center,
+                            startRadius: 8,
+                            endRadius: 52
+                        )
+                    )
+                    .frame(width: 102, height: 102)
+                    .blur(radius: 8)
+                    .position(x: width * 0.45, y: 117)
+
+                if showsCloseButton {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .heavy))
+                            .foregroundStyle(.white)
+                            .frame(width: 32, height: 32)
+                            .background(Color.white.opacity(0.18), in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 56)
+                    .padding(.trailing, 32)
                 }
-                .buttonStyle(.plain)
-                .padding(.top, 28)
-                .padding(.trailing, 22)
+
+                PremiumThermometerCard()
+                    .frame(width: 92, height: 156)
+                    .position(x: width * 0.19, y: 150)
+
+                PaywallHeroMetric(symbol: "thermometer.medium", title: "Feel", value: "Hot", tint: RoomlyTheme.ColorToken.orange)
+                    .position(x: width * 0.55, y: 197)
+
+                PaywallHeroMetric(symbol: "wind", title: "Wind", value: "10 km/h", tint: Color(red: 0.655, green: 0.953, blue: 1.0))
+                    .position(x: width * 0.80, y: 197)
+
+                PaywallHeroMetric(symbol: "house.fill", title: "Inside", value: "22 °C", tint: .white)
+                    .position(x: width * 0.45, y: 249)
+
+                PaywallHeroMetric(symbol: "sun.max.fill", title: "Outside", value: "26.2 °C", tint: RoomlyTheme.ColorToken.sun)
+                    .position(x: width * 0.70, y: 249)
             }
-
-            PremiumThermometerCard()
-                .frame(width: 86, height: 166)
-                .position(x: 67, y: 111)
-
-            RoomlyWeatherCloud()
-                .frame(width: 142, height: 78)
-                .position(x: 193, y: 82)
-
-            VStack(spacing: 8) {
-                HStack(spacing: 6) {
-                    PaywallHeroMetric(symbol: "thermometer.medium", title: "Indoor", value: "15°", tint: RoomlyTheme.ColorToken.orange)
-                    PaywallHeroMetric(symbol: "wind", title: "Wind", value: "11", tint: Color(red: 0.655, green: 0.953, blue: 1.0))
-                }
-
-                HStack(spacing: 6) {
-                    PaywallHeroMetric(symbol: "house.fill", title: "Comfort", value: "82", tint: .white)
-                    PaywallHeroMetric(symbol: "sun.max.fill", title: "Outlook", value: "7d", tint: RoomlyTheme.ColorToken.sun)
-                }
-            }
-            .frame(width: 230)
-            .position(x: 260, y: 166)
+            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 34, bottomLeadingRadius: 30, bottomTrailingRadius: 30, topTrailingRadius: 34, style: .continuous))
         }
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 30, bottomTrailingRadius: 30, topTrailingRadius: 0, style: .continuous))
     }
 
     private var bodyContent: some View {
         VStack(spacing: 12) {
             VStack(spacing: 5) {
-                Text("Estimated Room Comfort")
+                Text("Indoor Comfort")
                     .font(.system(size: 24, weight: .bold, design: .rounded))
                     .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-                Text("Thermometer")
+                Text("Weather Intelligence")
                     .font(.system(size: 28, weight: .heavy, design: .rounded))
                     .italic()
                     .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue)
 
-                Text("Smart indoor comfort insights and weather forecasts.")
+                Text("Smart Indoor Estimate insights and Weather Insights.")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
                     .multilineTextAlignment(.center)
@@ -108,9 +123,9 @@ struct PaywallView: View {
             VStack(spacing: 8) {
                 ForEach(Array(viewModel.features.enumerated()), id: \.offset) { _, feature in
                     HStack(spacing: 10) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundStyle(RoomlyTheme.ColorToken.green)
+                        Circle()
+                            .fill(RoomlyTheme.ColorToken.primaryBlue)
+                            .frame(width: 10, height: 10)
 
                         Text(feature)
                             .font(.system(size: 14, weight: .bold))
@@ -155,8 +170,6 @@ struct PaywallView: View {
             }
             .padding(.top, 2)
 
-            trustRow
-
             Text("Cancel anytime. Secure subscription. Your plan renews automatically and can be managed in App Store settings.")
                 .font(.system(size: 10, weight: .semibold))
                 .lineSpacing(2)
@@ -183,19 +196,6 @@ struct PaywallView: View {
         .padding(.bottom, 18)
     }
 
-    private var trustRow: some View {
-        HStack(spacing: 8) {
-            Label("App Store billing", systemImage: "lock.shield.fill")
-            Circle().fill(RoomlyTheme.ColorToken.tertiaryInk.opacity(0.35)).frame(width: 4, height: 4)
-            Label("Mock preview", systemImage: "sparkles")
-        }
-        .font(.system(size: 11, weight: .heavy))
-        .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue)
-        .padding(.horizontal, 12)
-        .frame(height: 32)
-        .background(RoomlyTheme.ColorToken.surfaceBlue, in: Capsule())
-        .overlay(Capsule().stroke(RoomlyTheme.ColorToken.border, lineWidth: 1))
-    }
 }
 
 private struct PremiumThermometerCard: View {
@@ -206,32 +206,34 @@ private struct PremiumThermometerCard: View {
                 .overlay(RoundedRectangle(cornerRadius: 24).stroke(.white, lineWidth: 1))
                 .shadow(color: Color(red: 0.039, green: 0.239, blue: 0.541).opacity(0.25), radius: 16, x: 0, y: 8)
 
-            VStack(spacing: 8) {
-                Text("20")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(RoomlyTheme.ColorToken.tertiaryInk)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 14)
-
-                ZStack(alignment: .bottom) {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(red: 0.953, green: 0.969, blue: 0.988))
-                        .frame(width: 16, height: 100)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(RoomlyTheme.ColorToken.border, lineWidth: 1))
-
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(RoomlyTheme.ColorToken.red)
-                        .frame(width: 6, height: 66)
-                        .padding(.bottom, 2)
-
+            VStack(spacing: 7) {
+                ZStack {
                     Circle()
-                        .fill(RoomlyTheme.ColorToken.red)
-                        .frame(width: 30, height: 30)
-                        .overlay(Circle().stroke(.white, lineWidth: 5))
-                        .offset(y: 15)
+                        .fill(LinearGradient(colors: [Color(red: 0.867, green: 0.945, blue: 1.0), Color(red: 0.482, green: 0.780, blue: 1.0)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 52, height: 52)
+
+                    Image(systemName: "thermometer.sun.fill")
+                        .font(.system(size: 25, weight: .bold))
+                        .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue)
                 }
+
+                Text("ROOM")
+                    .font(.system(size: 9, weight: .heavy))
+                    .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+
+                Text("22°")
+                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                    .foregroundStyle(RoomlyTheme.ColorToken.ink)
+
+                Text("Comfort")
+                    .font(.system(size: 8, weight: .heavy))
+                    .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue)
+                    .padding(.horizontal, 9)
+                    .frame(height: 18)
+                    .background(RoomlyTheme.ColorToken.surfaceBlue, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 9).stroke(RoomlyTheme.ColorToken.border, lineWidth: 1))
             }
-            .padding(.vertical, 22)
+            .padding(.vertical, 16)
         }
     }
 }
@@ -251,11 +253,11 @@ private struct PaywallHeroMetric: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.76))
-                Text(value)
-                    .font(.system(size: 12, weight: .heavy))
+                    .font(.system(size: 10, weight: .heavy))
                     .foregroundStyle(.white)
+                Text(value)
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(Color(red: 0.918, green: 0.957, blue: 1.0))
             }
             Spacer(minLength: 0)
         }

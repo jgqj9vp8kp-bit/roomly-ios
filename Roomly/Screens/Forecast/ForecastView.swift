@@ -4,7 +4,7 @@ struct ForecastView: View {
     @ObservedObject var weatherViewModel: WeatherViewModel
 
     var body: some View {
-        WeatherInfoView(weatherViewModel: weatherViewModel)
+        WeatherInfoView(weatherViewModel: weatherViewModel, showsBackButton: false)
     }
 }
 
