@@ -992,7 +992,7 @@ private struct WeeklyTemperatureRange: View {
 }
 
 struct PricingCard: View {
-    let plan: PremiumPlan
+    let offer: SubscriptionOffer
     let isSelected: Bool
     let action: () -> Void
 
@@ -1009,11 +1009,11 @@ struct PricingCard: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 7) {
-                        Text(plan.title)
+                        Text(offer.title)
                             .font(.system(size: 15, weight: .heavy))
                             .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-                        if let badge = plan.badge {
+                        if let badge = offer.badge {
                             Text(badge)
                                 .font(.system(size: 9, weight: .heavy))
                                 .foregroundStyle(.white)
@@ -1023,19 +1023,20 @@ struct PricingCard: View {
                         }
                     }
 
-                    Text(plan.subtitle)
+                    Text(offer.subtitle.isEmpty ? offer.periodTitle.capitalized : offer.subtitle)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+                        .lineLimit(2)
                 }
 
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(plan.price)
+                    Text(offer.displayPrice)
                         .font(.system(size: 16, weight: .heavy, design: .rounded))
                         .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-                    Text(plan.period)
+                    Text(offer.periodTitle)
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(RoomlyTheme.ColorToken.tertiaryInk)
                 }

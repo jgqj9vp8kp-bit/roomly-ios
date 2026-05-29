@@ -38,6 +38,10 @@
 		2F0000442FB9FA00004F58B9 /* ManualLocationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0000452FB9FA00004F58B9 /* ManualLocationView.swift */; };
 		2F0000482FB9FA00004F58B9 /* ComfortEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0000472FB9FA00004F58B9 /* ComfortEngine.swift */; };
 		2F00004A2FB9FA00004F58B9 /* GeocodingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0000492FB9FA00004F58B9 /* GeocodingService.swift */; };
+		2F00004C2FB9FA00004F58B9 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F00004B2FB9FA00004F58B9 /* AppLogger.swift */; };
+		2F00004E2FB9FA00004F58B9 /* NotificationsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F00004D2FB9FA00004F58B9 /* NotificationsService.swift */; };
+		2F0000502FB9FA00004F58B9 /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F00004F2FB9FA00004F58B9 /* SubscriptionService.swift */; };
+		2F0000522FB9FA00004F58B9 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2F0000512FB9FA00004F58B9 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -92,6 +96,11 @@
 		2F0000452FB9FA00004F58B9 /* ManualLocationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualLocationView.swift; sourceTree = "<group>"; };
 		2F0000472FB9FA00004F58B9 /* ComfortEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComfortEngine.swift; sourceTree = "<group>"; };
 		2F0000492FB9FA00004F58B9 /* GeocodingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeocodingService.swift; sourceTree = "<group>"; };
+		2F00004B2FB9FA00004F58B9 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
+		2F00004D2FB9FA00004F58B9 /* NotificationsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsService.swift; sourceTree = "<group>"; };
+		2F00004F2FB9FA00004F58B9 /* SubscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionService.swift; sourceTree = "<group>"; };
+		2F0000512FB9FA00004F58B9 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		2F0000532FB9FA00004F58B9 /* Roomly.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Roomly.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -273,6 +282,9 @@
 				2F0000422FB9FA00004F58B9 /* LocationService.swift */,
 				2F0000492FB9FA00004F58B9 /* GeocodingService.swift */,
 				2F0000472FB9FA00004F58B9 /* ComfortEngine.swift */,
+				2F00004B2FB9FA00004F58B9 /* AppLogger.swift */,
+				2F00004D2FB9FA00004F58B9 /* NotificationsService.swift */,
+				2F00004F2FB9FA00004F58B9 /* SubscriptionService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -291,6 +303,8 @@
 		2F00002C2FB9FA00004F58B9 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				2F0000512FB9FA00004F58B9 /* PrivacyInfo.xcprivacy */,
+				2F0000532FB9FA00004F58B9 /* Roomly.storekit */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -379,6 +393,11 @@
 				TargetAttributes = {
 					1EA647032FB9F55E004F58B9 = {
 						CreatedOnToolsVersion = 15.4;
+						SystemCapabilities = {
+							com.apple.InAppPurchase = {
+								enabled = 1;
+							};
+						};
 					};
 					1EA647132FB9F561004F58B9 = {
 						CreatedOnToolsVersion = 15.4;
@@ -417,6 +436,7 @@
 			files = (
 				1EA6470F2FB9F561004F58B9 /* Preview Assets.xcassets in Resources */,
 				1EA6470C2FB9F561004F58B9 /* Assets.xcassets in Resources */,
+				2F0000522FB9FA00004F58B9 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -467,6 +487,9 @@
 				2F00003B2FB9FA00004F58B9 /* SubscriptionViewModel.swift in Sources */,
 				2F00000B2FB9FA00004F58B9 /* AppSettings.swift in Sources */,
 				1EA647082FB9F55E004F58B9 /* RoomlyApp.swift in Sources */,
+				2F00004C2FB9FA00004F58B9 /* AppLogger.swift in Sources */,
+				2F00004E2FB9FA00004F58B9 /* NotificationsService.swift in Sources */,
+				2F0000502FB9FA00004F58B9 /* SubscriptionService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -630,8 +653,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Roomly/Preview Content\"";
+				DEVELOPMENT_TEAM = M6A2R4JCSR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Roomly;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.weather";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Roomly uses your location to personalize local Weather Insights. Mock weather data is still used in this prototype.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -659,8 +685,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Roomly/Preview Content\"";
+				DEVELOPMENT_TEAM = M6A2R4JCSR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Roomly;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.weather";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Roomly uses your location to personalize local Weather Insights. Mock weather data is still used in this prototype.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

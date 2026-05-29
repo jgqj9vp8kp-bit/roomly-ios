@@ -1,0 +1,66 @@
+{
+  "identifier" : "C0BA85F4-7E1A-4F22-9C8C-1C09F4F60AB0",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21420948",
+      "localizations" : [],
+      "name" : "Roomly Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "5.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "5C4AC8A2",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Flexible weekly access to Roomly Premium.",
+              "displayName" : "Roomly Premium · Weekly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "roomly_premium_weekly",
+          "recurringSubscriptionPeriod" : "P1W",
+          "referenceName" : "Roomly Premium Weekly",
+          "subscriptionGroupID" : "21420948",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "29.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "9F2BC4F1",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Save with a yearly subscription to Roomly Premium.",
+              "displayName" : "Roomly Premium · Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "roomly_premium_yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Roomly Premium Yearly",
+          "subscriptionGroupID" : "21420948",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
