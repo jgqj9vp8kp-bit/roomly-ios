@@ -189,6 +189,26 @@ final class LocationViewModel: ObservableObject {
         }
     }
 
+    /// Concise, single-line city label for the onboarding map illustration.
+    /// Falls back to a neutral placeholder until the user grants GPS or
+    /// selects a city — it must never display a hardcoded default city.
+    var onboardingLocationDisplayName: String {
+        switch locationSource {
+        case .manual:
+            return selectedManualCity?.name ?? Self.onboardingLocationPlaceholder
+        case .gps:
+            if let locationName, !locationName.isEmpty, locationName != Self.gpsFallbackName {
+                return locationName
+            }
+            return Self.onboardingLocationPlaceholder
+        case .none:
+            return Self.onboardingLocationPlaceholder
+        }
+    }
+
+    static let onboardingLocationPlaceholder = "Your Location"
+    private static let gpsFallbackName = "Current Location"
+
     var activeCoordinates: LocationCoordinate? {
         switch locationSource {
         case .manual:
@@ -228,7 +248,7 @@ final class LocationViewModel: ObservableObject {
         } else if let currentCoordinates {
             currentCoordinates.formatted
         } else {
-            "Current Location"
+            Self.gpsFallbackName
         }
     }
 
@@ -265,7 +285,7 @@ final class LocationViewModel: ObservableObject {
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude
             )
-            locationName = await service.reverseGeocode(location) ?? "Current Location"
+            locationName = await service.reverseGeocode(location) ?? Self.gpsFallbackName
             setLocationSource(.gps)
             isLoading = false
             return true

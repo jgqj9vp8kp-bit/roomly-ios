@@ -63,15 +63,6 @@ struct SettingsRowItem: Identifiable {
     let symbol: String
 }
 
-struct PremiumPlan: Identifiable, Equatable {
-    let id: String
-    let title: String
-    let subtitle: String
-    let price: String
-    let period: String
-    let badge: String?
-}
-
 enum MockWeatherData {
     static let indoorEstimateCelsius = 15
     static let outdoorTemperatureCelsius = 14
@@ -85,7 +76,7 @@ enum MockWeatherData {
         wind: "11 km/h",
         pressure: "1017 hPa",
         condition: "Partially cloudy",
-        location: "Minsk, Belarus",
+        location: "Your Location",
         updatedAt: "Current location"
     )
 
@@ -161,10 +152,5 @@ enum MockWeatherData {
         "Advanced weather forecasts",
         "Personalized comfort insights",
         "Ad-free experience"
-    ]
-
-    static let premiumPlans = [
-        PremiumPlan(id: "weekly", title: "Weekly Plan", subtitle: "Flexible access", price: "$5.99", period: "week", badge: nil),
-        PremiumPlan(id: "yearly", title: "Yearly Plan", subtitle: "$0.57 / week", price: "$29.99", period: "year", badge: "Best value")
     ]
 }

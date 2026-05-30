@@ -29,7 +29,8 @@ struct OnboardingView: View {
                         OnboardingPageView(
                             page: page,
                             selectedPage: selectedPage,
-                            pageCount: totalFlowSteps
+                            pageCount: totalFlowSteps,
+                            locationLabel: locationViewModel.onboardingLocationDisplayName
                         ) {
                             advance(from: index)
                         }
@@ -66,41 +67,51 @@ private struct OnboardingPageView: View {
     let page: OnboardingPage
     let selectedPage: Int
     let pageCount: Int
+    let locationLabel: String
     let onContinue: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            hero
-                .frame(height: 560)
+        GeometryReader { proxy in
+            let metrics = OnboardingLayoutMetrics(
+                size: proxy.size,
+                safeAreaInsets: proxy.safeAreaInsets,
+                minimumContentHeight: page.minimumContentHeight,
+                preferredHeroHeight: page.preferredHeroHeight
+            )
 
-            VStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(page.title)
-                        .font(.system(size: 30, weight: .heavy, design: .rounded))
-                        .foregroundStyle(RoomlyTheme.ColorToken.ink)
-                        .fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: 0) {
+                hero
+                    .frame(height: metrics.heroHeight)
 
-                    Text(page.subtitle)
-                        .font(.system(size: 17, weight: .medium))
-                        .lineSpacing(2)
-                        .foregroundStyle(Color(red: 0.122, green: 0.161, blue: 0.216))
-                        .fixedSize(horizontal: false, vertical: true)
+                VStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(page.title)
+                            .font(.system(size: 30, weight: .heavy, design: .rounded))
+                            .foregroundStyle(RoomlyTheme.ColorToken.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Text(page.subtitle)
+                            .font(.system(size: 17, weight: .medium))
+                            .lineSpacing(2)
+                            .foregroundStyle(Color(red: 0.122, green: 0.161, blue: 0.216))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Spacer(minLength: 12)
+
+                    VStack(spacing: 14) {
+                        pageDots
+
+                        PremiumButton(title: "Continue", symbol: nil, action: onContinue)
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Spacer(minLength: 12)
-
-                VStack(spacing: 14) {
-                    pageDots
-
-                    PremiumButton(title: "Continue", symbol: nil, action: onContinue)
-                }
+                .padding(.horizontal, 28)
+                .padding(.top, 12)
+                .padding(.bottom, metrics.contentBottomPadding)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white)
             }
-            .padding(.horizontal, 28)
-            .padding(.top, 12)
-            .padding(.bottom, 20)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.white)
         }
     }
 
@@ -108,7 +119,7 @@ private struct OnboardingPageView: View {
     private var hero: some View {
         switch page.kind {
         case .location:
-            LocationMapHero()
+            LocationMapHero(locationLabel: locationLabel)
         case .comfort:
             IndoorComfortHero()
         }
@@ -125,65 +136,94 @@ private struct OnboardingPageView: View {
     }
 }
 
+private extension OnboardingPage {
+    var minimumContentHeight: CGFloat {
+        switch kind {
+        case .location:
+            292
+        case .comfort:
+            292
+        }
+    }
+
+    var preferredHeroHeight: CGFloat {
+        switch kind {
+        case .location:
+            560
+        case .comfort:
+            560
+        }
+    }
+}
+
 private struct OnboardingLocationStep: View {
     @ObservedObject var locationViewModel: LocationViewModel
     let onManualLocation: () -> Void
     let onComplete: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            LocationMapHero()
-                .frame(height: 560)
+        GeometryReader { proxy in
+            let metrics = OnboardingLayoutMetrics(
+                size: proxy.size,
+                safeAreaInsets: proxy.safeAreaInsets,
+                minimumContentHeight: 390,
+                preferredHeroHeight: 560
+            )
 
-            VStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Choose Your Location")
-                        .font(.system(size: 30, weight: .heavy, design: .rounded))
-                        .foregroundStyle(RoomlyTheme.ColorToken.ink)
-                        .fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: 0) {
+                LocationMapHero(locationLabel: locationViewModel.onboardingLocationDisplayName)
+                    .frame(height: metrics.heroHeight)
 
-                    Text("Allow GPS or enter a city manually to personalize your forecast and comfort insights.")
-                        .font(.system(size: 17, weight: .medium))
-                        .lineSpacing(2)
-                        .foregroundStyle(Color(red: 0.122, green: 0.161, blue: 0.216))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Choose Your Location")
+                            .font(.system(size: 30, weight: .heavy, design: .rounded))
+                            .foregroundStyle(RoomlyTheme.ColorToken.ink)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                Spacer(minLength: 12)
+                        Text("Allow GPS or enter a city manually to personalize your forecast and comfort insights.")
+                            .font(.system(size: 17, weight: .medium))
+                            .lineSpacing(2)
+                            .foregroundStyle(Color(red: 0.122, green: 0.161, blue: 0.216))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                VStack(spacing: 14) {
-                    LocationPermissionStatusPanel(
-                        viewModel: locationViewModel,
-                        onManualLocation: {
-                            HapticFeedback.selection()
-                            onManualLocation()
+                    Spacer(minLength: 12)
+
+                    VStack(spacing: 14) {
+                        LocationPermissionStatusPanel(
+                            viewModel: locationViewModel,
+                            onManualLocation: {
+                                HapticFeedback.selection()
+                                onManualLocation()
+                            }
+                        )
+
+                        PremiumButton(title: primaryButtonTitle, symbol: nil) {
+                            handlePrimaryAction()
                         }
-                    )
+                        .disabled(locationViewModel.isLoading)
+                        .opacity(locationViewModel.isLoading ? 0.72 : 1)
 
-                    PremiumButton(title: primaryButtonTitle, symbol: nil) {
-                        handlePrimaryAction()
+                        Button {
+                            HapticFeedback.selection()
+                            onComplete()
+                        } label: {
+                            Text("Continue for Now")
+                                .font(.system(size: 13, weight: .heavy))
+                                .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+                                .frame(height: 28)
+                        }
+                        .buttonStyle(PressableButtonStyle())
                     }
-                    .disabled(locationViewModel.isLoading)
-                    .opacity(locationViewModel.isLoading ? 0.72 : 1)
-
-                    Button {
-                        HapticFeedback.selection()
-                        onComplete()
-                    } label: {
-                        Text("Continue for Now")
-                            .font(.system(size: 13, weight: .heavy))
-                            .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
-                            .frame(height: 28)
-                    }
-                    .buttonStyle(PressableButtonStyle())
                 }
+                .padding(.horizontal, 28)
+                .padding(.top, 12)
+                .padding(.bottom, metrics.contentBottomPadding)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white)
             }
-            .padding(.horizontal, 28)
-            .padding(.top, 12)
-            .padding(.bottom, 20)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.white)
         }
     }
 
@@ -216,6 +256,24 @@ private struct OnboardingLocationStep: View {
     }
 }
 
+private struct OnboardingLayoutMetrics {
+    let size: CGSize
+    let safeAreaInsets: EdgeInsets
+    let minimumContentHeight: CGFloat
+    let preferredHeroHeight: CGFloat
+
+    var heroHeight: CGFloat {
+        let availableHeight = size.height + safeAreaInsets.top
+        let desiredHeroHeight = min(preferredHeroHeight, availableHeight * 0.66)
+        let maximumHeroHeight = size.height - minimumContentHeight
+        return max(240, min(desiredHeroHeight, maximumHeroHeight))
+    }
+
+    var contentBottomPadding: CGFloat {
+        max(24, safeAreaInsets.bottom + 20)
+    }
+}
+
 private struct LocationPermissionStatusPanel: View {
     @ObservedObject var viewModel: LocationViewModel
     let onManualLocation: () -> Void
@@ -244,27 +302,21 @@ private struct LocationPermissionStatusPanel: View {
                 }
             }
 
-            if shouldShowManualButton {
-                Button {
-                    HapticFeedback.selection()
-                    onManualLocation()
-                } label: {
-                    Label("Enter Location Manually", systemImage: "keyboard")
-                        .font(.system(size: 13, weight: .heavy))
-                        .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(RoomlyTheme.ColorToken.surfaceBlue, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                }
-                .buttonStyle(PressableButtonStyle())
+            Button {
+                HapticFeedback.selection()
+                onManualLocation()
+            } label: {
+                Label("Enter Location Manually", systemImage: "keyboard")
+                    .font(.system(size: 13, weight: .heavy))
+                    .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 40)
+                    .background(RoomlyTheme.ColorToken.surfaceBlue, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
+            .buttonStyle(PressableButtonStyle())
         }
         .padding(12)
         .roomlyCard(cornerRadius: 18)
-    }
-
-    private var shouldShowManualButton: Bool {
-        true
     }
 
     private var statusSymbol: String {
@@ -345,6 +397,8 @@ private struct LocationPermissionStatusPanel: View {
 }
 
 private struct LocationMapHero: View {
+    let locationLabel: String
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -376,8 +430,9 @@ private struct LocationMapHero: View {
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(RoomlyTheme.ColorToken.primaryBlue, .white)
 
-                Text("Minsk")
+                Text(locationLabel)
                     .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .lineLimit(1)
                     .foregroundStyle(RoomlyTheme.ColorToken.ink)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
@@ -392,112 +447,124 @@ private struct LocationMapHero: View {
 
 private struct IndoorComfortHero: View {
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Color(red: 0.051, green: 0.243, blue: 0.58), RoomlyTheme.ColorToken.primaryBlue, Color(red: 0.73, green: 0.91, blue: 1.0)],
-                startPoint: .bottomLeading,
-                endPoint: .topTrailing
-            )
+        GeometryReader { proxy in
+            let designWidth: CGFloat = 393
+            let designHeight: CGFloat = 560
+            let scale = proxy.size.width / designWidth
 
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [Color.black.opacity(0.20), RoomlyTheme.ColorToken.primaryBlue.opacity(0.18), Color.black.opacity(0.38)],
-                        startPoint: .top,
-                        endPoint: .bottom
+            ZStack(alignment: .topLeading) {
+                Image("IndoorRoomPhoto")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: designWidth, height: designHeight)
+                    .clipped()
+
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                RoomlyTheme.ColorToken.primaryBlue.opacity(0.34),
+                                Color(red: 0.067, green: 0.42, blue: 0.91).opacity(0.47),
+                                Color(red: 0.031, green: 0.141, blue: 0.357).opacity(0.72)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
                     )
-                )
+                    .frame(width: designWidth, height: designHeight)
 
-            Circle()
-                .fill(Color.white.opacity(0.15))
-                .blur(radius: 16)
-                .frame(width: 210, height: 210)
-                .offset(x: -125, y: -150)
+                Circle()
+                    .fill(Color.white.opacity(0.15))
+                    .blur(radius: 16)
+                    .frame(width: 210, height: 210)
+                    .position(x: 105, y: 105)
 
-            Circle()
-                .fill(RoomlyTheme.ColorToken.sun)
-                .frame(width: 58, height: 58)
-                .shadow(color: RoomlyTheme.ColorToken.sun.opacity(0.45), radius: 18, x: 0, y: 8)
-                .offset(x: 120, y: -200)
+                Circle()
+                    .fill(Color(red: 0.875, green: 0.957, blue: 1.0).opacity(0.13))
+                    .blur(radius: 18)
+                    .frame(width: 190, height: 190)
+                    .position(x: 283, y: 107)
 
-            WeatherCloud()
-                .frame(width: 128, height: 58)
-                .offset(x: -118, y: -175)
-                .opacity(0.75)
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Smart Room Comfort")
+                                .font(.system(size: 18, weight: .black))
+                                .foregroundStyle(RoomlyTheme.ColorToken.ink)
 
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Comfort Index")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
-                        Text("82")
-                            .font(.system(size: 44, weight: .heavy, design: .rounded))
-                            .foregroundStyle(RoomlyTheme.ColorToken.ink)
+                            Text("Estimated from room and weather signals")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+                        }
+
+                        Spacer()
+
+                        VStack(spacing: 0) {
+                            Text("86")
+                                .font(.system(size: 19, weight: .black, design: .rounded))
+                                .foregroundStyle(.white)
+
+                            Text("score")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundStyle(Color(red: 0.867, green: 0.922, blue: 1.0))
+                        }
+                        .frame(width: 58, height: 58)
+                        .background(RoomlyTheme.ctaGradient, in: Circle())
                     }
 
-                    Spacer()
+                    HStack(spacing: 9) {
+                        MiniComfortSignal(symbol: "face.smiling", symbolColor: RoomlyTheme.ColorToken.green, value: "Good")
+                        MiniComfortSignal(symbol: "thermometer.medium", symbolColor: RoomlyTheme.ColorToken.primaryBlue, value: "74°F")
+                        MiniComfortSignal(symbol: "wind", symbolColor: RoomlyTheme.ColorToken.sky, value: "Calm")
+                    }
 
-                    SymbolBadge(symbol: "house.fill", tint: RoomlyTheme.ColorToken.primaryBlue, size: 46)
+                    Text("Comfort looks stable for the next few hours.")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
                 }
+                .padding(18)
+                .frame(width: 329, height: 190)
+                .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(Color.white.opacity(0.72), lineWidth: 1))
+                .shadow(color: Color(red: 0.012, green: 0.118, blue: 0.275).opacity(0.31), radius: 36, x: 0, y: 18)
+                .position(x: 196.5, y: 199)
 
-                HStack(spacing: 9) {
-                    MiniComfortMetric(title: "Indoor", value: "15°")
-                    MiniComfortMetric(title: "Humidity", value: "68%")
-                    MiniComfortMetric(title: "Wind", value: "11")
-                }
-
-                Text("Estimated comfort looks stable for the next few hours.")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(RoomlyTheme.ColorToken.secondaryInk)
+                Label("Weather-aware room estimates", systemImage: "cloud.sun.fill")
+                    .font(.system(size: 11, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .frame(width: 245, height: 44)
+                    .background(Color.white.opacity(0.23), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.40), lineWidth: 1))
+                    .position(x: 196.5, y: 320)
             }
-            .padding(18)
-            .frame(width: 329, height: 190)
-            .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(Color.white.opacity(0.72), lineWidth: 1))
-            .shadow(color: Color.black.opacity(0.24), radius: 28, x: 0, y: 18)
-            .offset(y: -80)
-
-            Label("Weather-aware room estimates", systemImage: "cloud.sun.fill")
-                .font(.system(size: 11, weight: .heavy))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 12)
-                .frame(width: 245, height: 44)
-                .background(Color.white.opacity(0.23), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.40), lineWidth: 1))
-                .offset(y: 19)
+            .frame(width: designWidth, height: designHeight)
+            .scaleEffect(scale, anchor: .topLeading)
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
+            .clipped()
         }
-        .clipped()
     }
 }
 
-private struct MiniComfortMetric: View {
-    let title: String
+private struct MiniComfortSignal: View {
+    let symbol: String
+    let symbolColor: Color
     let value: String
 
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 3) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(symbolColor)
+
             Text(value)
-                .font(.system(size: 14, weight: .heavy, design: .rounded))
+                .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(RoomlyTheme.ColorToken.ink)
-            Text(title)
-                .font(.system(size: 9, weight: .bold))
-                .foregroundStyle(RoomlyTheme.ColorToken.tertiaryInk)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 46)
-        .background(RoomlyTheme.ColorToken.tile, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-}
-
-private struct WeatherCloud: View {
-    var body: some View {
-        ZStack {
-            Circle().fill(.white).frame(width: 52, height: 34).offset(x: -30, y: 7)
-            Circle().fill(.white).frame(width: 54, height: 50).offset(x: 4, y: -6)
-            Circle().fill(.white).frame(width: 44, height: 30).offset(x: 34, y: 10)
-            RoundedRectangle(cornerRadius: 10).fill(.white).frame(width: 92, height: 20).offset(y: 18)
-        }
+        .background(RoomlyTheme.ColorToken.tile, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).stroke(Color(red: 0.875, green: 0.918, blue: 0.973), lineWidth: 1))
     }
 }
 

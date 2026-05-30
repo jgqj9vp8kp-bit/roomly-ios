@@ -360,6 +360,9 @@ struct DashboardWeatherCard: View {
         .frame(maxWidth: .infinity, minHeight: 212, alignment: .leading)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .shadow(color: shadowColor, radius: 24, x: 0, y: 14)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue("\(value), \(subtitle). \(footnote)")
     }
 
     private var locationForecastCard: some View {
@@ -606,6 +609,14 @@ struct ComfortGaugeDashboardCard: View {
     let unit: TemperatureUnit
 
     var body: some View {
+        cardContents
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Room temperature")
+            .accessibilityValue("Indoor estimate \(dashboard.snapshot.indoorEstimate), comfort index \(dashboard.comfort.index), \(dashboard.comfort.level.rawValue)")
+            .accessibilityHint("Opens room settings")
+    }
+
+    private var cardContents: some View {
         ZStack(alignment: .trailing) {
             Image("IndoorRoomPhoto")
                 .resizable()
@@ -866,6 +877,9 @@ struct GlassMetricCard: View {
         .padding(.horizontal, 11)
         .frame(maxWidth: .infinity, minHeight: 58)
         .roomlyCard(cornerRadius: RoomlyTheme.Radius.tile, shadow: RoomlyTheme.Shadow.soft.opacity(0.7))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(metric.title)
+        .accessibilityValue("\(metric.value), \(metric.caption)")
     }
 }
 
@@ -1250,7 +1264,7 @@ extension Array {
     ZStack {
         RoomlyBackground()
         VStack(spacing: 14) {
-            ScreenHeader(title: "Roomly", subtitle: "Minsk, Belarus", trailingSymbol: "crown.fill") {}
+            ScreenHeader(title: "Roomly", subtitle: "Your Location", trailingSymbol: "crown.fill") {}
             DashboardWeatherCard(
                 title: "Indoor Comfort",
                 subtitle: "Indoor Estimate",
